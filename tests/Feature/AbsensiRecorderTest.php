@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\SiswaHadirMail;
 use App\Models\HariLibur;
 use App\Models\Kelas;
 use App\Models\Pengaturan;
@@ -9,13 +10,14 @@ use App\Models\Siswa;
 use App\Services\AbsensiRecorder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class AbsensiRecorderTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function siswa(): Siswa
+    private function siswa(array $overrides = []): Siswa
     {
         $kelas = Kelas::create([
             'nama_kelas' => 'X RPL 1',
@@ -23,12 +25,12 @@ class AbsensiRecorderTest extends TestCase
             'tingkat' => 'X',
         ]);
 
-        return Siswa::create([
+        return Siswa::create(array_merge([
             'nis' => '12345',
             'nama' => 'Budi',
             'jenis_kelamin' => 'L',
             'kelas_id' => $kelas->id,
-        ]);
+        ], $overrides));
     }
 
     protected function tearDown(): void
@@ -209,5 +211,59 @@ class AbsensiRecorderTest extends TestCase
             'jam_masuk' => '07:00:00',
             'jam_pulang' => null,
         ]);
+    }
+
+    public function test_absen_masuk_mengirim_konfirmasi_kehadiran_ke_email_orang_tua(): void
+    {
+        Mail::fake();
+        Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
+
+        app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'kehadiran',
+            'kontak' => 'ortu@example.com',
+            'status' => 'terkirim',
+        ]);
+        Mail::assertSent(SiswaHadirMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
+    }
+
+    public function test_absen_masuk_tanpa_email_orang_tua_tidak_mengirim_apa_pun_tapi_tetap_absen(): void
+    {
+        Mail::fake();
+        Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        $siswa = $this->siswa();
+
+        $result = app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertSame('success', $result['status']);
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'kehadiran',
+            'kontak' => null,
+            'status' => 'tidak_ada_kontak',
+        ]);
+        Mail::assertNothingSent();
+    }
+
+    public function test_absen_pulang_tidak_mengirim_konfirmasi_kehadiran_lagi(): void
+    {
+        Mail::fake();
+        Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
+
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        app(AbsensiRecorder::class)->record($siswa);
+
+        Carbon::setTestNow('2026-07-13 13:30:00');
+        app(AbsensiRecorder::class)->record($siswa);
+
+        // Cuma satu notifikasi kehadiran (dari absen masuk), bukan dua.
+        $this->assertSame(1, \App\Models\NotifikasiAbsensiLog::where('siswa_id', $siswa->id)->where('jenis', 'kehadiran')->count());
+        Mail::assertSent(SiswaHadirMail::class, 1);
     }
 }

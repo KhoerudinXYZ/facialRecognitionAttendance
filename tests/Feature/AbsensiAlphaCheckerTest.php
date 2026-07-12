@@ -6,6 +6,7 @@ use App\Mail\SiswaAlphaMail;
 use App\Models\Absensi;
 use App\Models\HariLibur;
 use App\Models\Kelas;
+use App\Models\Pengaturan;
 use App\Models\Siswa;
 use App\Services\AbsensiAlphaChecker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -117,5 +118,34 @@ class AbsensiAlphaCheckerTest extends TestCase
         app(AbsensiAlphaChecker::class)->jalankan();
 
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
+    }
+
+    public function test_belum_menandai_alpha_sebelum_jam_tunggu_setelah_mulai_pulang(): void
+    {
+        Mail::fake();
+        Pengaturan::get()->update(['mulai_pulang' => '13:00']);
+        // Baru 1 jam setelah mulai_pulang (jam tunggunya 2 jam) -> masih terlalu awal.
+        Carbon::setTestNow('2026-07-13 14:00:00');
+        $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
+
+        $jumlah = app(AbsensiAlphaChecker::class)->jalankan();
+
+        $this->assertSame(0, $jumlah);
+        $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
+        Mail::assertNothingSent();
+    }
+
+    public function test_menandai_alpha_tepat_setelah_jam_tunggu_terlewati(): void
+    {
+        Mail::fake();
+        Pengaturan::get()->update(['mulai_pulang' => '13:00']);
+        // Tepat 2 jam setelah mulai_pulang -> sudah boleh jalan.
+        Carbon::setTestNow('2026-07-13 15:00:00');
+        $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
+
+        $jumlah = app(AbsensiAlphaChecker::class)->jalankan();
+
+        $this->assertSame(1, $jumlah);
+        $this->assertDatabaseHas('absensi', ['siswa_id' => $siswa->id, 'status' => 'alpha']);
     }
 }

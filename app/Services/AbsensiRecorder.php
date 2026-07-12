@@ -2,11 +2,15 @@
 
 namespace App\Services;
 
+use App\Mail\SiswaHadirMail;
 use App\Models\Absensi;
 use App\Models\HariLibur;
+use App\Models\NotifikasiAbsensiLog;
 use App\Models\Pengaturan;
 use App\Models\Siswa;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class AbsensiRecorder
 {
@@ -68,6 +72,8 @@ class AbsensiRecorder
                 Absensi::create([...$atribut, 'siswa_id' => $siswa->id, 'tanggal' => $today]);
             }
 
+            $this->notifikasiKehadiran($siswa, $now, $status);
+
             return [
                 'status' => 'success',
                 'message' => "Absen masuk berhasil: {$siswa->nama} ({$status})",
@@ -107,6 +113,49 @@ class AbsensiRecorder
             'message' => "{$siswa->nama} sudah absen masuk & pulang hari ini.",
             'nama' => $siswa->nama,
         ];
+    }
+
+    /**
+     * Konfirmasi ke orang tua bahwa anaknya sudah tiba di sekolah — best
+     * effort (gagal kirim tidak boleh menggagalkan absen itu sendiri),
+     * dicatat ke notifikasi_absensi_log sama seperti notifikasi alpha
+     * (lihat AbsensiAlphaChecker) supaya riwayatnya ada di satu tempat.
+     */
+    private function notifikasiKehadiran(Siswa $siswa, Carbon $waktu, string $status): void
+    {
+        $pesan = "Yth. Orang Tua/Wali dari {$siswa->nama}, kami informasikan ananda sudah tiba di sekolah pada "
+            . "{$waktu->format('d/m/Y H:i')} ({$status}).";
+
+        if (! $siswa->email_orang_tua) {
+            NotifikasiAbsensiLog::create([
+                'siswa_id' => $siswa->id,
+                'siswa_nama' => $siswa->nama,
+                'tanggal' => $waktu->copy()->startOfDay(),
+                'jenis' => 'kehadiran',
+                'kontak' => null,
+                'pesan' => $pesan,
+                'status' => 'tidak_ada_kontak',
+            ]);
+
+            return;
+        }
+
+        try {
+            Mail::to($siswa->email_orang_tua)->send(new SiswaHadirMail($siswa->nama, $waktu, $status));
+            $hasil = 'terkirim';
+        } catch (Throwable) {
+            $hasil = 'gagal';
+        }
+
+        NotifikasiAbsensiLog::create([
+            'siswa_id' => $siswa->id,
+            'siswa_nama' => $siswa->nama,
+            'tanggal' => $waktu->copy()->startOfDay(),
+            'jenis' => 'kehadiran',
+            'kontak' => $siswa->email_orang_tua,
+            'pesan' => $pesan,
+            'status' => $hasil,
+        ]);
     }
 
     /**
