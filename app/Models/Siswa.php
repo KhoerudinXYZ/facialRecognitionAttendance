@@ -15,6 +15,7 @@ class Siswa extends Authenticatable
         'nis',
         'nisn',
         'no_hp_orang_tua',
+        'email_orang_tua',
         'nama',
         'jenis_kelamin',
         'kelas_id',

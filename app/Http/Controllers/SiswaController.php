@@ -161,8 +161,8 @@ class SiswaController extends Controller
         return response()->streamDownload(function () {
             $writer = new XlsxWriter();
             $writer->openToFile('php://output');
-            $writer->addRow(Row::fromValues(['NIS', 'NISN', 'Nama', 'Jenis Kelamin (L/P)', 'Kelas', 'Aktif (Y/N)', 'No. WhatsApp Orang Tua']));
-            $writer->addRow(Row::fromValues(['12345', '0012345678', 'Contoh Nama Siswa', 'L', 'X RPL 1', 'Y', '628123456789']));
+            $writer->addRow(Row::fromValues(['NIS', 'NISN', 'Nama', 'Jenis Kelamin (L/P)', 'Kelas', 'Aktif (Y/N)', 'No. WhatsApp Orang Tua', 'Email Orang Tua']));
+            $writer->addRow(Row::fromValues(['12345', '0012345678', 'Contoh Nama Siswa', 'L', 'X RPL 1', 'Y', '628123456789', 'orangtua@email.com']));
             $writer->close();
         }, 'template-import-siswa.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -197,12 +197,12 @@ class SiswaController extends Controller
                     continue; // baris header
                 }
 
-                // No. WhatsApp Orang Tua ditaruh di kolom paling akhir (bukan
-                // disisipkan di tengah) supaya file lama yang cuma punya 6
-                // kolom tetap terbaca persis sama seperti sebelum kolom ini
-                // ada — array_pad mengisi posisi ke-7 dengan null.
-                $cells = array_pad($row->toArray(), 7, null);
-                [$nis, $nisn, $nama, $jk, $kelasNama, $aktif, $noHpOrangTua] = $cells;
+                // No. WhatsApp & Email Orang Tua ditaruh di kolom paling akhir
+                // (bukan disisipkan di tengah) supaya file lama yang cuma
+                // punya 6 atau 7 kolom tetap terbaca persis sama seperti
+                // sebelum kolom ini ada — array_pad mengisi sisanya dengan null.
+                $cells = array_pad($row->toArray(), 8, null);
+                [$nis, $nisn, $nama, $jk, $kelasNama, $aktif, $noHpOrangTua, $emailOrangTua] = $cells;
 
                 $nis = $this->normalizeCell($nis);
                 $nama = $this->normalizeCell($nama);
@@ -243,6 +243,7 @@ class SiswaController extends Controller
                     'nis' => $nis,
                     'nisn' => $this->normalizeCell($nisn) ?: null,
                     'no_hp_orang_tua' => $this->normalizeCell($noHpOrangTua) ?: null,
+                    'email_orang_tua' => $this->normalizeCell($emailOrangTua) ?: null,
                     'nama' => $nama,
                     'jenis_kelamin' => $jk,
                     'kelas_id' => $kelas->id,
@@ -286,6 +287,7 @@ class SiswaController extends Controller
             'nis' => ['required', 'string', 'max:30', 'unique:siswa,nis' . ($ignoreId ? ",{$ignoreId}" : '')],
             'nisn' => ['nullable', 'string', 'max:30'],
             'no_hp_orang_tua' => ['nullable', 'string', 'max:20'],
+            'email_orang_tua' => ['nullable', 'email', 'max:150'],
             'nama' => ['required', 'string', 'max:150'],
             'jenis_kelamin' => ['required', 'in:L,P'],
             'kelas_id' => ['required', Rule::in($kelasIds)],

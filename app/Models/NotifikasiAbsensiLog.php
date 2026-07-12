@@ -12,7 +12,7 @@ class NotifikasiAbsensiLog extends Model
         'siswa_id',
         'siswa_nama',
         'tanggal',
-        'no_hp',
+        'kontak',
         'pesan',
         'status',
     ];

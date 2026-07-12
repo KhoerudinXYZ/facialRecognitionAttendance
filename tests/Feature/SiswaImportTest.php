@@ -114,4 +114,27 @@ class SiswaImportTest extends TestCase
 
         $this->assertDatabaseHas('siswa', ['nis' => '3001', 'no_hp_orang_tua' => '628123456789']);
     }
+
+    public function test_import_membaca_email_orang_tua_di_kolom_paling_akhir(): void
+    {
+        $this->actingAs($this->admin());
+        Kelas::create([
+            'nama_kelas' => 'X RPL 1',
+            'jurusan' => 'RPL',
+            'tingkat' => 'X',
+        ]);
+
+        $file = $this->buildXlsx([
+            ['NIS', 'NISN', 'Nama', 'Jenis Kelamin (L/P)', 'Kelas', 'Aktif (Y/N)', 'No. WhatsApp Orang Tua', 'Email Orang Tua'],
+            ['4001', '', 'Doni', 'L', 'X RPL 1', 'Y', '628123456789', 'ortu@example.com'],
+        ]);
+
+        $this->post('/siswa/import', ['file' => $file]);
+
+        $this->assertDatabaseHas('siswa', [
+            'nis' => '4001',
+            'no_hp_orang_tua' => '628123456789',
+            'email_orang_tua' => 'ortu@example.com',
+        ]);
+    }
 }

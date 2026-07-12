@@ -2,28 +2,28 @@
 
 namespace App\Services;
 
-use App\Contracts\WhatsAppGateway;
+use App\Mail\SiswaAlphaMail;
 use App\Models\Absensi;
 use App\Models\HariLibur;
 use App\Models\NotifikasiAbsensiLog;
 use App\Models\Pengaturan;
 use App\Models\Siswa;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 /**
  * Jalan di akhir hari (lihat perintah absensi:cek-alpha & jadwalnya di
  * routes/console.php): siswa aktif yang sampai saat ini belum punya baris
- * absensi hari ini ditandai alpha, lalu (kalau nomor WhatsApp orang tua
- * terdaftar) dikirimi notifikasi. AbsensiRecorder tahu cara menimpa baris
- * alpha ini kalau siswa ternyata scan beneran setelahnya (lihat komentar
- * di AbsensiRecorder::record()).
+ * absensi hari ini ditandai alpha, lalu (kalau email orang tua terdaftar)
+ * dikirimi notifikasi. Kanal WhatsApp sempat dibangun tapi untuk sekarang
+ * dipakai email dulu (belum ada penyedia WhatsApp API yang dipilih) —
+ * no_hp_orang_tua tetap tersimpan di Siswa untuk dipakai lagi nanti.
+ * AbsensiRecorder tahu cara menimpa baris alpha ini kalau siswa ternyata
+ * scan beneran setelahnya (lihat komentar di AbsensiRecorder::record()).
  */
 class AbsensiAlphaChecker
 {
-    public function __construct(private WhatsAppGateway $gateway)
-    {
-    }
-
     /**
      * Return jumlah siswa yang baru ditandai alpha (0 kalau hari libur).
      */
@@ -59,28 +59,33 @@ class AbsensiAlphaChecker
         $pesan = "Yth. Orang Tua/Wali dari {$siswa->nama}, kami informasikan ananda tidak hadir di sekolah pada "
             . "{$tanggal->format('d/m/Y')} tanpa keterangan. Mohon konfirmasi ke pihak sekolah. Terima kasih.";
 
-        if (! $siswa->no_hp_orang_tua) {
+        if (! $siswa->email_orang_tua) {
             NotifikasiAbsensiLog::create([
                 'siswa_id' => $siswa->id,
                 'siswa_nama' => $siswa->nama,
                 'tanggal' => $tanggal,
-                'no_hp' => null,
+                'kontak' => null,
                 'pesan' => $pesan,
-                'status' => 'tidak_ada_no_hp',
+                'status' => 'tidak_ada_kontak',
             ]);
 
             return;
         }
 
-        $berhasil = $this->gateway->send($siswa->no_hp_orang_tua, $pesan);
+        try {
+            Mail::to($siswa->email_orang_tua)->send(new SiswaAlphaMail($siswa->nama, $tanggal));
+            $status = 'terkirim';
+        } catch (Throwable) {
+            $status = 'gagal';
+        }
 
         NotifikasiAbsensiLog::create([
             'siswa_id' => $siswa->id,
             'siswa_nama' => $siswa->nama,
             'tanggal' => $tanggal,
-            'no_hp' => $siswa->no_hp_orang_tua,
+            'kontak' => $siswa->email_orang_tua,
             'pesan' => $pesan,
-            'status' => $berhasil ? 'terkirim' : 'gagal',
+            'status' => $status,
         ]);
     }
 }

@@ -11,10 +11,16 @@
                       :value="old('nisn', $siswa->nisn ?? '')" />
     </div>
     <div>
-        <x-input-label for="no_hp_orang_tua" value="No. WhatsApp Orang Tua (opsional)" />
+        <x-input-label for="email_orang_tua" value="Email Orang Tua (opsional)" />
+        <x-text-input id="email_orang_tua" name="email_orang_tua" type="email" class="mt-1 block w-full"
+                      placeholder="orangtua@email.com" :value="old('email_orang_tua', $siswa->email_orang_tua ?? '')" />
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Dipakai untuk notifikasi otomatis saat siswa alpha. Kosongkan kalau belum ada.</p>
+    </div>
+    <div>
+        <x-input-label for="no_hp_orang_tua" value="No. WhatsApp Orang Tua (opsional, belum dipakai)" />
         <x-text-input id="no_hp_orang_tua" name="no_hp_orang_tua" type="text" class="mt-1 block w-full"
                       placeholder="628123456789" :value="old('no_hp_orang_tua', $siswa->no_hp_orang_tua ?? '')" />
-        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Dipakai untuk notifikasi otomatis saat siswa alpha. Kosongkan kalau belum ada.</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Disimpan untuk dipakai nanti kalau notifikasi WhatsApp diaktifkan kembali.</p>
     </div>
     <div class="sm:col-span-2">
         <x-input-label for="nama" value="Nama Lengkap" />
