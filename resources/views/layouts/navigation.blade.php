@@ -36,7 +36,7 @@
                     </x-nav-dropdown>
 
                     @if (Auth::user()->isAdmin())
-                        <x-nav-dropdown title="{{ __('Administrasi') }}" icon="cog" :active="request()->routeIs(['staff.*', 'pengaturan.*', 'hari-libur.*'])">
+                        <x-nav-dropdown title="{{ __('Administrasi') }}" icon="cog" :active="request()->routeIs(['staff.*', 'pengaturan.*', 'hari-libur.*', 'absensi.audit'])">
                             <x-dropdown-link :href="route('staff.index')">
                                 {{ __('Staff') }}
                             </x-dropdown-link>
@@ -45,6 +45,9 @@
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('hari-libur.index')">
                                 {{ __('Hari Libur') }}
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('absensi.audit')">
+                                {{ __('Riwayat Hapus Absensi') }}
                             </x-dropdown-link>
                         </x-nav-dropdown>
                     @endif
@@ -198,6 +201,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('hari-libur.index')" :active="request()->routeIs('hari-libur.*')">
                     {{ __('Hari Libur') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('absensi.audit')" :active="request()->routeIs('absensi.audit')">
+                    {{ __('Riwayat Hapus Absensi') }}
                 </x-responsive-nav-link>
             @endif
         </div>

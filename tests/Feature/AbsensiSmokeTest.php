@@ -253,6 +253,43 @@ class AbsensiSmokeTest extends TestCase
         $this->delete("/absensi/{$absen->id}")->assertRedirect();
 
         $this->assertDatabaseMissing('absensi', ['id' => $absen->id]);
+
+        // Baris aslinya hilang total, tapi jejaknya harus tetap ada &
+        // lengkap di absensi_audit_log — itu inti dari fitur audit trail-nya.
+        $this->assertDatabaseHas('absensi_audit_log', [
+            'absensi_id' => $absen->id,
+            'siswa_id' => $siswa->id,
+            'siswa_nama' => 'Dewi',
+            'status' => 'hadir',
+            'metode' => 'face',
+            'dihapus_oleh_nama' => 'Admin',
+        ]);
+    }
+
+    public function test_halaman_riwayat_hapus_absensi_hanya_admin(): void
+    {
+        $kelasSendiri = $this->kelas();
+        $siswa = Siswa::create([
+            'nis' => '888', 'nama' => 'Wawan', 'jenis_kelamin' => 'L', 'kelas_id' => $kelasSendiri->id,
+        ]);
+        $absen = Absensi::create([
+            'siswa_id' => $siswa->id,
+            'tanggal' => now()->toDateString(),
+            'jam_masuk' => '07:00:00',
+            'status' => 'hadir',
+            'metode' => 'face',
+        ]);
+        $wali = $this->waliKelas($kelasSendiri);
+
+        // Wali kelas boleh menghapus absensi kelas binaannya sendiri
+        // (AbsensiPolicy::delete), tapi tidak boleh melihat halaman audit
+        // gabungan seluruh sekolah — itu murni untuk oversight admin.
+        $this->actingAs($wali);
+        $this->delete("/absensi/{$absen->id}")->assertRedirect();
+        $this->get('/absensi/audit')->assertForbidden();
+
+        $this->actingAs($this->admin());
+        $this->get('/absensi/audit')->assertOk()->assertSee('Wawan');
     }
 
     /**

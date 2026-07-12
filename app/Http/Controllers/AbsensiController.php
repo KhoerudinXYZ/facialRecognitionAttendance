@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Absensi;
+use App\Models\AbsensiAuditLog;
 use App\Models\HariLibur;
 use App\Models\Kelas;
 use App\Models\Siswa;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class AbsensiController extends Controller
@@ -85,15 +87,44 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Hapus (reset) satu record absensi dari rekap.
+     * Hapus (reset) satu record absensi dari rekap. Baris absensi asli
+     * akan hilang total (bukan soft delete), jadi datanya disalin dulu ke
+     * absensi_audit_log sebelum dihapus — supaya tetap bisa dilacak siapa
+     * menghapus apa, kapan, walau baris aslinya sudah tidak ada.
      */
     public function destroy(Absensi $absensi): RedirectResponse
     {
         $this->authorize('delete', $absensi);
 
         $nama = $absensi->siswa->nama ?? 'siswa';
+
+        AbsensiAuditLog::create([
+            'absensi_id' => $absensi->id,
+            'siswa_id' => $absensi->siswa_id,
+            'siswa_nama' => $nama,
+            'tanggal' => $absensi->tanggal,
+            'jam_masuk' => $absensi->jam_masuk,
+            'jam_pulang' => $absensi->jam_pulang,
+            'status' => $absensi->status,
+            'metode' => $absensi->metode,
+            'keterangan' => $absensi->keterangan,
+            'dihapus_oleh_user_id' => Auth::id(),
+            'dihapus_oleh_nama' => Auth::user()->name,
+        ]);
+
         $absensi->delete();
 
         return back()->with('success', "Absensi {$nama} berhasil dihapus.");
+    }
+
+    /**
+     * Daftar riwayat absensi yang pernah dihapus (admin saja) — murni
+     * untuk akuntabilitas/oversight, bukan tempat mengembalikan data.
+     */
+    public function audit(): View
+    {
+        $log = AbsensiAuditLog::orderByDesc('created_at')->paginate(30);
+
+        return view('absensi.audit', compact('log'));
     }
 }
