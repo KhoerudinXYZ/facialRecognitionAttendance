@@ -43,7 +43,11 @@ class AbsensiRecorder
             ->whereDate('tanggal', $today)
             ->first();
 
-        if (! $existing) {
+        // Baris 'alpha' ditulis otomatis oleh AbsensiAlphaChecker di akhir
+        // hari (bukan hasil scan siswa) — kalau siswa ternyata muncul dan
+        // scan beneran setelah itu, ini tetap harus diperlakukan sebagai
+        // absen masuk asli (menimpa baris alpha), bukan "sudah absen".
+        if (! $existing || $existing->status === 'alpha') {
             if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng)) {
                 return $tolakLokasi;
             }
@@ -51,13 +55,18 @@ class AbsensiRecorder
             $batas = Carbon::parse($today->toDateString() . ' ' . $pengaturan->batas_terlambat);
             $status = $now->greaterThan($batas) ? 'terlambat' : 'hadir';
 
-            Absensi::create([
-                'siswa_id' => $siswa->id,
-                'tanggal' => $today,
+            $atribut = [
                 'jam_masuk' => $now->format('H:i:s'),
+                'jam_pulang' => null,
                 'status' => $status,
                 'metode' => 'face',
-            ]);
+            ];
+
+            if ($existing) {
+                $existing->update($atribut);
+            } else {
+                Absensi::create([...$atribut, 'siswa_id' => $siswa->id, 'tanggal' => $today]);
+            }
 
             return [
                 'status' => 'success',

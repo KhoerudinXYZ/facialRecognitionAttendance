@@ -1,6 +1,6 @@
 # Contoh Data Import 40 Siswa
 
-Data contoh untuk diuji-coba pada fitur **Import Excel** (`/siswa/import`). Kolom mengikuti persis format template yang diunduh dari tombol **"Unduh template Excel"**: `NIS, NISN, Nama, Jenis Kelamin (L/P), Kelas, Aktif (Y/N)`.
+Data contoh untuk diuji-coba pada fitur **Import Excel** (`/siswa/import`). Kolom mengikuti persis format template yang diunduh dari tombol **"Unduh template Excel"**: `NIS, NISN, Nama, Jenis Kelamin (L/P), Kelas, Aktif (Y/N)`, ditambah kolom opsional `No. WhatsApp Orang Tua` di paling akhir (boleh dikosongkan, dipakai untuk notifikasi otomatis saat siswa alpha — lihat `AbsensiAlphaChecker`). Data contoh di bawah sengaja tidak mengisi kolom itu; tabel 6 kolom lama tetap terbaca apa adanya.
 
 Kelas **`X RPL 1`** dipakai karena sudah tersedia otomatis dari `DatabaseSeeder` (lihat `database/seeders/DatabaseSeeder.php`) — jadi data ini bisa langsung diimport tanpa perlu membuat kelas baru dulu.
 

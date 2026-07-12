@@ -6,6 +6,7 @@ use App\Http\Controllers\FaceEnrollmentController;
 use App\Http\Controllers\HariLiburController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\NotifikasiAbsensiController;
 use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SiswaController;
@@ -79,6 +80,8 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('hari-libur/{hariLibur}', [HariLiburController::class, 'destroy'])->name('hari-libur.destroy');
 
         Route::get('absensi/audit', [AbsensiController::class, 'audit'])->name('absensi.audit');
+
+        Route::get('notifikasi-absensi', [NotifikasiAbsensiController::class, 'index'])->name('notifikasi-absensi.index');
     });
 
     // Profil (bawaan Breeze)

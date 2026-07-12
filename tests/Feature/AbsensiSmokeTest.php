@@ -292,6 +292,18 @@ class AbsensiSmokeTest extends TestCase
         $this->get('/absensi/audit')->assertOk()->assertSee('Wawan');
     }
 
+    public function test_halaman_notifikasi_orang_tua_hanya_admin(): void
+    {
+        $kelas = $this->kelas();
+        $wali = $this->waliKelas($kelas);
+
+        $this->actingAs($wali);
+        $this->get('/notifikasi-absensi')->assertForbidden();
+
+        $this->actingAs($this->admin());
+        $this->get('/notifikasi-absensi')->assertOk();
+    }
+
     /**
      * Regresi: form kirim value checkbox sebagai string ("6", "0"), bukan
      * int. HariLibur::isLibur() membandingkan Carbon::dayOfWeek (int)

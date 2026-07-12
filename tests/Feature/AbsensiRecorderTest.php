@@ -183,4 +183,31 @@ class AbsensiRecorderTest extends TestCase
         $this->assertSame('lokasi', $result['status']);
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
     }
+
+    public function test_siswa_yang_sudah_ditandai_alpha_tapi_lalu_scan_beneran_menimpa_jadi_hadir(): void
+    {
+        Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        $siswa = $this->siswa();
+
+        // Simulasikan baris yang ditulis AbsensiAlphaChecker di akhir hari kemarin.
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        \App\Models\Absensi::create([
+            'siswa_id' => $siswa->id,
+            'tanggal' => '2026-07-13',
+            'status' => 'alpha',
+            'metode' => 'manual',
+        ]);
+
+        $result = app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertSame('success', $result['status']);
+        $this->assertSame('hadir', $result['keterangan']);
+        $this->assertSame(1, \App\Models\Absensi::where('siswa_id', $siswa->id)->count());
+        $this->assertDatabaseHas('absensi', [
+            'siswa_id' => $siswa->id,
+            'status' => 'hadir',
+            'jam_masuk' => '07:00:00',
+            'jam_pulang' => null,
+        ]);
+    }
 }

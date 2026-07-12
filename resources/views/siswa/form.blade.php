@@ -10,6 +10,12 @@
         <x-text-input id="nisn" name="nisn" type="text" class="mt-1 block w-full"
                       :value="old('nisn', $siswa->nisn ?? '')" />
     </div>
+    <div>
+        <x-input-label for="no_hp_orang_tua" value="No. WhatsApp Orang Tua (opsional)" />
+        <x-text-input id="no_hp_orang_tua" name="no_hp_orang_tua" type="text" class="mt-1 block w-full"
+                      placeholder="628123456789" :value="old('no_hp_orang_tua', $siswa->no_hp_orang_tua ?? '')" />
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Dipakai untuk notifikasi otomatis saat siswa alpha. Kosongkan kalau belum ada.</p>
+    </div>
     <div class="sm:col-span-2">
         <x-input-label for="nama" value="Nama Lengkap" />
         <x-text-input id="nama" name="nama" type="text" class="mt-1 block w-full"
