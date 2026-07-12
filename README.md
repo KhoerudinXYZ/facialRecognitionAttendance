@@ -4,11 +4,15 @@ Aplikasi absensi siswa SMK berbasis **pengenalan wajah** (face recognition). Det
 
 ## Fitur
 
-- **Manajemen Kelas & Siswa** (CRUD) + pendaftaran (enroll) wajah lewat webcam.
-- **Kiosk Absensi** — satu perangkat berkamera; siswa cukup menghadap kamera, kehadiran tercatat otomatis (status **hadir/terlambat** berdasarkan jam masuk).
-- **Rekap harian** dengan filter tanggal & kelas, serta input **manual** (izin/sakit/alpha).
+- **Manajemen Kelas & Siswa** (CRUD) + impor Excel.
+- **Portal siswa mandiri** (`/portal`) — siswa registrasi sendiri dengan klaim NIS, daftar wajah lewat webcam, lalu **absen mandiri**: cukup menghadap kamera di HP/laptop masing-masing, kehadiran tercatat otomatis (status **hadir/terlambat** berdasarkan jam masuk).
+- **Verifikasi lokasi GPS** (opsional) — kalau titik sekolah & radius dikonfigurasi, absen mandiri ditolak bila siswa di luar radius.
+- **Hari libur**: tanggal manual (rentang) + **libur mingguan otomatis** (mis. Sabtu & Minggu dicentang sekali, berlaku tiap minggu tanpa perlu ditambah satu-satu).
+- **Alpha otomatis + notifikasi email orang tua** — siswa yang tidak absen sampai akhir hari (dan bukan hari libur) ditandai alpha otomatis, orang tua/wali diberi tahu lewat email kalau alamatnya terdaftar.
+- **Audit trail** — riwayat absensi yang dihapus tetap tercatat (siapa, kapan, data apa) walau barisnya sendiri sudah hilang dari rekap.
+- **Rekap harian** dengan filter tanggal & kelas, serta input **manual** (izin/sakit/alpha) oleh admin/wali kelas.
 - **Laporan** periode + **export Excel (.xlsx)** dan **PDF**.
-- **Login admin/guru** (Laravel Breeze).
+- **Login admin/wali kelas** (Laravel Breeze) terpisah dari portal siswa.
 
 ## Teknologi
 
@@ -60,16 +64,26 @@ Buka `http://localhost:8000`.
 
 ## Alur pemakaian
 
+**Admin/wali kelas:**
 1. **Kelas** → tambah kelas/rombel.
-2. **Siswa** → tambah siswa → **Daftar Wajah** → rekam 5 sampel → simpan.
-3. **Kiosk Absen** → arahkan wajah ke kamera → kehadiran tercatat otomatis (1× per hari per siswa).
-4. **Rekap** / **Laporan** → lihat, input manual, export Excel/PDF.
-5. **Pengaturan** → atur jam masuk & batas terlambat.
+2. **Siswa** → tambah siswa satu-satu atau **impor Excel** (NIS, nama, kelas, opsional email/no. WA orang tua).
+3. **Pengaturan** → atur jam masuk, batas terlambat, mulai pulang, opsional lokasi GPS sekolah.
+4. **Hari Libur** → tambah tanggal libur manual, dan/atau centang hari libur mingguan (Sabtu/Minggu).
+5. **Rekap** / **Laporan** → lihat kehadiran, input manual (izin/sakit/alpha), export Excel/PDF.
+
+**Siswa (mandiri, lewat `/portal`):**
+1. **Registrasi** → klaim NIS yang sudah didaftarkan admin, buat username & password sendiri.
+2. **Daftar Wajah** → rekam beberapa sampel wajah lewat webcam/HP.
+3. **Absen** → buka halaman absen, arahkan wajah ke kamera → kehadiran tercatat otomatis (1× masuk, 1× pulang per hari). Kalau lokasi GPS diaktifkan admin, browser akan minta izin lokasi dan menolak absen di luar radius sekolah.
+4. **Riwayat** → lihat rekap kehadiran & hari libur bulanan sendiri.
+
+Siswa yang sampai akhir hari belum absen (dan bukan hari libur) otomatis ditandai **alpha**; kalau email orang tua terdaftar, notifikasi terkirim otomatis (lihat `AbsensiAlphaChecker`, dijadwalkan tiap malam — butuh cron di server, lihat `DEPLOYMENT.md`).
 
 ## Catatan
 
 - face-api.js tidak memiliki *anti-spoofing* bawaan (foto di layar bisa mengelabui). Cukup untuk lingkungan sekolah terawasi; tambahan verifikasi kedip/gerak kepala dapat menjadi pengembangan lanjutan.
 - Ambang kecocokan wajah: jarak Euclidean `0.5` (`resources/js/face-kiosk.js`, konstanta `MATCH_THRESHOLD`).
+- Notifikasi email orang tua saat ini terkirim lewat `MAIL_MAILER` biasa (bukan WhatsApp) — lihat `DEPLOYMENT.md` untuk mengisi kredensial SMTP asli.
 
 ## Test
 
