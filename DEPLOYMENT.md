@@ -38,7 +38,16 @@ Kalau nanti web app ini ada di belakang reverse proxy/load balancer (Cloudflare,
 
 Tanpa cron ini, `absensi:cek-alpha` tidak pernah jalan otomatis — bisa dijalankan manual (`php artisan absensi:cek-alpha`) sebagai sementara, tapi tidak akan konsisten tiap hari.
 
-## 6. Setelah deploy pertama kali
+## 6. Backup database (spatie/laravel-backup)
+
+Backup harian (dump database + `storage/app/public`, yaitu foto siswa yang diupload) dijadwalkan lewat command yang sama (`routes/console.php`) — jadi butuh cron yang sama seperti poin 5 di atas. Tanpa cron, backup tidak pernah jalan otomatis.
+
+- **Isi `BACKUP_NOTIFICATION_EMAIL`** di `.env` produksi — default masih placeholder `your@example.com`. Tanpa ini, notifikasi backup gagal/tidak sehat tidak akan sampai ke siapa pun.
+- **Isi `BACKUP_ARCHIVE_PASSWORD`** kalau mau arsip backup terenkripsi — isinya termasuk seluruh data siswa (nama, NIS, kontak orang tua) dan foto, jadi arsipnya sendiri sensitif.
+- **Backup ini hanya tersimpan lokal di server** (`storage/app/private`, disk `local`). Ini *bukan* backup off-site — kalau server-nya sendiri hilang/rusak (disk gagal, hosting kena masalah), backup lokal ikut hilang. Tambahkan disk kedua (mis. S3, lihat `config/backup.php` bagian `destination.disks`) begitu ada kredensial cloud storage, supaya backup benar-benar aman dari kegagalan server itu sendiri.
+- Cek manual: `php artisan backup:run` lalu `php artisan backup:list` untuk konfirmasi backup pertama berhasil dan sehat.
+
+## 7. Setelah deploy pertama kali
 
 ```bash
 composer install --no-dev --optimize-autoloader
@@ -54,9 +63,10 @@ php artisan view:cache
 - Pastikan `public/models/` (weight face-api) ikut ter-deploy — file besar, kadang tidak ke-copy oleh proses deploy yang mengecualikan file besar/binary.
 - Cek `php artisan schedule:list` untuk konfirmasi jadwal `absensi:cek-alpha` terbaca dengan benar di server.
 
-## 7. Sanity check cepat setelah live
+## 8. Sanity check cepat setelah live
 
 1. Buka situs via HTTPS, coba `/portal/absen` — pastikan kamera benar-benar menyala (bukti secure context jalan).
 2. Login sebagai admin baru (bukan akun default), cek `/pengaturan` bisa diakses.
 3. Coba proses absen mandiri end-to-end sekali, cek muncul di rekap.
 4. Kalau lokasi GPS & email orang tua sudah dikonfigurasi, cek satu siklus `php artisan absensi:cek-alpha` manual dulu sebelum mengandalkan cron sepenuhnya.
+5. Jalankan `php artisan backup:run` manual sekali, cek `php artisan backup:list` menunjukkan status sehat.

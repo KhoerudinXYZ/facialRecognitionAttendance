@@ -22,3 +22,11 @@ Artisan::command('absensi:cek-alpha', function (AbsensiAlphaChecker $checker) {
 // di server (`* * * * * php artisan schedule:run`) supaya ini benar-benar
 // berjalan otomatis — tanpa itu, jalankan manual: `php artisan absensi:cek-alpha`.
 Schedule::command('absensi:cek-alpha')->dailyAt('23:00');
+
+// Backup harian (spatie/laravel-backup): dump database + storage/app/public
+// (foto siswa yang diupload). clean lebih dulu supaya monitor menilai ukuran
+// setelah backup lama dibuang, bukan sebelum. Sama seperti di atas, butuh
+// cron beneran di server supaya berjalan otomatis.
+Schedule::command('backup:clean')->dailyAt('01:00');
+Schedule::command('backup:run')->dailyAt('01:30');
+Schedule::command('backup:monitor')->dailyAt('02:00');

@@ -10,6 +10,7 @@ Aplikasi absensi siswa SMK berbasis **pengenalan wajah** (face recognition). Det
 - **Hari libur**: tanggal manual (rentang) + **libur mingguan otomatis** (mis. Sabtu & Minggu dicentang sekali, berlaku tiap minggu tanpa perlu ditambah satu-satu).
 - **Alpha otomatis + notifikasi email orang tua** — siswa yang tidak absen sampai akhir hari (dan bukan hari libur) ditandai alpha otomatis, orang tua/wali diberi tahu lewat email kalau alamatnya terdaftar.
 - **Audit trail** — riwayat absensi yang dihapus tetap tercatat (siapa, kapan, data apa) walau barisnya sendiri sudah hilang dari rekap.
+- **Backup database otomatis** (`spatie/laravel-backup`) — dump database + foto siswa terjadwal tiap hari, lihat `DEPLOYMENT.md`.
 - **Rekap harian** dengan filter tanggal & kelas, serta input **manual** (izin/sakit/alpha) oleh admin/wali kelas.
 - **Laporan** periode + **export Excel (.xlsx)** dan **PDF**.
 - **Login admin/wali kelas** (Laravel Breeze) terpisah dari portal siswa.
