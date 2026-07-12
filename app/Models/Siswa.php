@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Mail\SiswaResetPasswordMail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Mail;
 
 class Siswa extends Authenticatable
 {
@@ -57,6 +59,42 @@ class Siswa extends Authenticatable
     public function isRegistered(): bool
     {
         return $this->username !== null;
+    }
+
+    /**
+     * Siswa tidak punya email sendiri — reset password (lihat
+     * SiswaAuth\SiswaPasswordResetLinkController) memakai email_orang_tua
+     * sebagai kanal, sama seperti notifikasi alpha/kehadiran.
+     */
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->email_orang_tua;
+    }
+
+    public function routeNotificationForMail($notification): string
+    {
+        return $this->email_orang_tua;
+    }
+
+    /**
+     * Override bawaan Laravel (Illuminate\Auth\Passwords\CanResetPassword)
+     * karena notifikasi default membangun URL dengan route('password.reset',
+     * ...) — nama route itu punya prefix 'siswa.' di aplikasi ini
+     * (routes/siswa.php), jadi akan salah kalau dibiarkan bawaan. Kirim
+     * langsung pakai Mailable (konsisten dengan SiswaAlphaMail/SiswaHadirMail)
+     * daripada lewat sistem Notification, sekalian menyertakan nis di URL
+     * supaya SiswaNewPasswordController bisa membedakan kakak-adik yang
+     * kebetulan berbagi email_orang_tua yang sama.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $url = route('siswa.password.reset', [
+            'token' => $token,
+            'nis' => $this->nis,
+            'email_orang_tua' => $this->email_orang_tua,
+        ]);
+
+        Mail::to($this->email_orang_tua)->send(new SiswaResetPasswordMail($this->nama, $url));
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

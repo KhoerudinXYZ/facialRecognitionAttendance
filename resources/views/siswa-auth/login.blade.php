@@ -36,7 +36,11 @@
             Login
         </button>
 
-        <a class="block mt-4 text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" href="{{ route('siswa.register') }}">
+        <a class="block mt-3 text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" href="{{ route('siswa.password.request') }}">
+            Lupa password?
+        </a>
+
+        <a class="block mt-3 text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" href="{{ route('siswa.register') }}">
             Belum punya akun? <span class="text-indigo-600 dark:text-indigo-400 font-medium">Registrasi</span>
         </a>
     </form>

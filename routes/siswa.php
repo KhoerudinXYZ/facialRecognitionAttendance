@@ -3,6 +3,8 @@
 use App\Http\Controllers\SiswaAuth\SiswaAbsensiController;
 use App\Http\Controllers\SiswaAuth\SiswaDashboardController;
 use App\Http\Controllers\SiswaAuth\SiswaFaceEnrollmentController;
+use App\Http\Controllers\SiswaAuth\SiswaNewPasswordController;
+use App\Http\Controllers\SiswaAuth\SiswaPasswordResetLinkController;
 use App\Http\Controllers\SiswaAuth\SiswaRegistrationController;
 use App\Http\Controllers\SiswaAuth\SiswaSessionController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +19,11 @@ Route::prefix('portal')->name('siswa.')->group(function () {
 
         Route::get('login', [SiswaSessionController::class, 'create'])->name('login');
         Route::post('login', [SiswaSessionController::class, 'store']);
+
+        Route::get('forgot-password', [SiswaPasswordResetLinkController::class, 'create'])->name('password.request');
+        Route::post('forgot-password', [SiswaPasswordResetLinkController::class, 'store'])->name('password.email');
+        Route::get('reset-password/{token}', [SiswaNewPasswordController::class, 'create'])->name('password.reset');
+        Route::post('reset-password', [SiswaNewPasswordController::class, 'store'])->name('password.store');
     });
 
     Route::middleware('auth.siswa')->group(function () {
