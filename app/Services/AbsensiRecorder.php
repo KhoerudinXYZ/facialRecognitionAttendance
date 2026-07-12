@@ -1,0 +1,159 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Absensi;
+use App\Models\HariLibur;
+use App\Models\Pengaturan;
+use App\Models\Siswa;
+use Illuminate\Support\Carbon;
+
+class AbsensiRecorder
+{
+    /**
+     * Catat kehadiran siswa untuk hari ini: scan pertama = absen masuk
+     * (status hadir/terlambat ditentukan dari Pengaturan::batas_terlambat),
+     * scan kedua setelah Pengaturan::mulai_pulang = absen pulang. Absen
+     * diblokir total di tanggal yang terdaftar sebagai hari libur.
+     * Dipakai oleh kiosk (AbsensiController) maupun absen mandiri siswa
+     * (SiswaAbsensiController) agar logikanya tidak bercabang.
+     *
+     * $lat/$lng hanya dipakai kalau Pengaturan::lokasiAktif() — kiosk admin
+     * (AbsensiController) tidak pernah mengirimnya karena kameranya memang
+     * di sekolah, jadi parameter ini opsional & backward compatible.
+     */
+    public function record(Siswa $siswa, ?float $lat = null, ?float $lng = null): array
+    {
+        $pengaturan = Pengaturan::get();
+
+        // Pengaturan::simulasi_waktu: field testing-only, boleh dihapus
+        // kapan saja tanpa mempengaruhi alur normal (lihat migration-nya).
+        $now = $pengaturan->waktuSekarang();
+        $today = $now->copy()->startOfDay();
+
+        if (HariLibur::isLibur($today)) {
+            return [
+                'status' => 'libur',
+                'message' => 'Hari ini libur, absensi tidak aktif.',
+                'nama' => $siswa->nama,
+            ];
+        }
+
+        $existing = Absensi::where('siswa_id', $siswa->id)
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        if (! $existing) {
+            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng)) {
+                return $tolakLokasi;
+            }
+
+            $batas = Carbon::parse($today->toDateString() . ' ' . $pengaturan->batas_terlambat);
+            $status = $now->greaterThan($batas) ? 'terlambat' : 'hadir';
+
+            Absensi::create([
+                'siswa_id' => $siswa->id,
+                'tanggal' => $today,
+                'jam_masuk' => $now->format('H:i:s'),
+                'status' => $status,
+                'metode' => 'face',
+            ]);
+
+            return [
+                'status' => 'success',
+                'message' => "Absen masuk berhasil: {$siswa->nama} ({$status})",
+                'nama' => $siswa->nama,
+                'jam' => $now->format('H:i'),
+                'keterangan' => $status,
+            ];
+        }
+
+        if (! $existing->jam_pulang) {
+            $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
+
+            if ($now->lessThan($mulaiPulang)) {
+                return [
+                    'status' => 'already',
+                    'message' => "{$siswa->nama} sudah absen masuk hari ini. Absen pulang dibuka mulai {$pengaturan->mulai_pulang}.",
+                    'nama' => $siswa->nama,
+                ];
+            }
+
+            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng)) {
+                return $tolakLokasi;
+            }
+
+            $existing->update(['jam_pulang' => $now->format('H:i:s')]);
+
+            return [
+                'status' => 'success',
+                'message' => "Absen pulang berhasil: {$siswa->nama}",
+                'nama' => $siswa->nama,
+                'jam' => $now->format('H:i'),
+            ];
+        }
+
+        return [
+            'status' => 'already',
+            'message' => "{$siswa->nama} sudah absen masuk & pulang hari ini.",
+            'nama' => $siswa->nama,
+        ];
+    }
+
+    /**
+     * Return null kalau boleh lanjut (lokasi tidak dikonfigurasi, atau
+     * siswa terdeteksi di dalam radius). Return array status 'lokasi'
+     * kalau ditolak (lat/lng tidak terkirim, atau di luar radius).
+     * Dipanggil tepat sebelum tiap titik tulis (bukan di awal method) —
+     * supaya cek libur & cek "sudah absen" tetap menang duluan, jadi
+     * siswa yang memang sudah kelar absen dapat pesan yang benar.
+     */
+    private function cekLokasi(Pengaturan $pengaturan, Siswa $siswa, ?float $lat, ?float $lng): ?array
+    {
+        if (! $pengaturan->lokasiAktif()) {
+            return null;
+        }
+
+        if ($lat === null || $lng === null) {
+            return [
+                'status' => 'lokasi',
+                'message' => 'Lokasi GPS tidak terdeteksi. Aktifkan izin lokasi lalu coba lagi.',
+                'nama' => $siswa->nama,
+            ];
+        }
+
+        $jarak = $this->jarakMeter(
+            (float) $pengaturan->lokasi_lat,
+            (float) $pengaturan->lokasi_lng,
+            $lat,
+            $lng
+        );
+
+        if ($jarak > $pengaturan->lokasi_radius_meter) {
+            return [
+                'status' => 'lokasi',
+                'message' => 'Kamu berada di luar radius sekolah, absen tidak bisa dicatat.',
+                'nama' => $siswa->nama,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Jarak antara dua titik koordinat dalam meter (formula haversine).
+     */
+    private function jarakMeter(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $bumiRadiusMeter = 6371000;
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+
+        $a = sin($dLat / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $bumiRadiusMeter * $c;
+    }
+}
