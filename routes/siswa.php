@@ -4,7 +4,9 @@ use App\Http\Controllers\SiswaAuth\SiswaAbsensiController;
 use App\Http\Controllers\SiswaAuth\SiswaDashboardController;
 use App\Http\Controllers\SiswaAuth\SiswaFaceEnrollmentController;
 use App\Http\Controllers\SiswaAuth\SiswaNewPasswordController;
+use App\Http\Controllers\SiswaAuth\SiswaPasswordController;
 use App\Http\Controllers\SiswaAuth\SiswaPasswordResetLinkController;
+use App\Http\Controllers\SiswaAuth\SiswaProfileController;
 use App\Http\Controllers\SiswaAuth\SiswaRegistrationController;
 use App\Http\Controllers\SiswaAuth\SiswaSessionController;
 use Illuminate\Support\Facades\Route;
@@ -38,5 +40,9 @@ Route::prefix('portal')->name('siswa.')->group(function () {
         Route::get('absen', [SiswaAbsensiController::class, 'create'])->name('absen');
         Route::post('absen', [SiswaAbsensiController::class, 'store'])->name('absen.store');
         Route::get('riwayat', [SiswaAbsensiController::class, 'riwayat'])->name('riwayat');
+
+        Route::get('profil', [SiswaProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('profil', [SiswaProfileController::class, 'update'])->name('profile.update');
+        Route::put('profil/password', [SiswaPasswordController::class, 'update'])->name('password.update');
     });
 });

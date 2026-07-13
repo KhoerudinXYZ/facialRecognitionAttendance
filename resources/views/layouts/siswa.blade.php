@@ -26,7 +26,7 @@
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
             <header class="bg-gradient-to-r from-indigo-600 to-indigo-500 shadow">
                 <div class="max-w-lg mx-auto px-4 py-4 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
+                    <a href="{{ route('siswa.profile.edit') }}" class="flex items-center gap-3">
                         @if ($siswaUser->foto)
                             <img src="{{ \Illuminate\Support\Facades\Storage::url($siswaUser->foto) }}"
                                  alt="{{ $siswaUser->nama }}"
@@ -40,7 +40,7 @@
                             <p class="font-semibold text-white leading-tight">{{ $siswaUser->nama }}</p>
                             <p class="text-xs text-indigo-100">{{ $siswaUser->kelas->nama_kelas ?? '-' }}</p>
                         </div>
-                    </div>
+                    </a>
                     <div class="flex items-center gap-1">
                         <button id="theme-toggle" type="button"
                                 class="w-9 h-9 flex items-center justify-center rounded-full text-indigo-100 hover:bg-white/10 hover:text-white transition"
