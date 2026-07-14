@@ -51,7 +51,9 @@ class LaporanController extends Controller
         $liburDalamPeriode = HariLibur::whereBetween('tanggal', [$dari->toDateString(), $sampai->toDateString()])->count();
         $barisTanpaWali = $data->filter(fn (Absensi $a) => ! $a->siswa?->kelas?->waliKelas)->count();
 
-        $filename = 'laporan-absensi-' . $dari->format('Ymd') . '-' . $sampai->format('Ymd') . '.xlsx';
+        $periodeLabel = $this->periodeLabel($dari, $sampai);
+        $filename = 'laporan-absensi' . ($periodeLabel ? '-' . strtolower($periodeLabel) : '')
+            . '-' . $dari->format('Ymd') . '-' . $sampai->format('Ymd') . '.xlsx';
 
         return response()->streamDownload(function () use ($data, $liburDalamPeriode, $barisTanpaWali) {
             $writer = new Writer();
@@ -137,6 +139,8 @@ class LaporanController extends Controller
         $liburDalamPeriode = HariLibur::whereBetween('tanggal', [$dari->toDateString(), $sampai->toDateString()])->count();
         $barisTanpaWali = $data->filter(fn (Absensi $a) => ! $a->siswa?->kelas?->waliKelas)->count();
 
+        $periodeLabel = $this->periodeLabel($dari, $sampai);
+
         $pdf = Pdf::loadView('laporan.pdf', [
             'data' => $data,
             'dari' => $dari,
@@ -144,9 +148,13 @@ class LaporanController extends Controller
             'pengaturan' => Pengaturan::get(),
             'liburDalamPeriode' => $liburDalamPeriode,
             'barisTanpaWali' => $barisTanpaWali,
+            'periodeLabel' => $periodeLabel,
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('laporan-absensi-' . $dari->format('Ymd') . '-' . $sampai->format('Ymd') . '.pdf');
+        $filename = 'laporan-absensi' . ($periodeLabel ? '-' . strtolower($periodeLabel) : '')
+            . '-' . $dari->format('Ymd') . '-' . $sampai->format('Ymd') . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     /**
@@ -163,6 +171,32 @@ class LaporanController extends Controller
             'Bulan Ini' => [$sekarang->copy()->startOfMonth(), $sekarang->copy()],
             'Tahun Ini' => [$sekarang->copy()->startOfYear(), $sekarang->copy()],
         ];
+    }
+
+    /**
+     * Cocokkan dari/sampai yang dipakai laporan ini dengan salah satu preset
+     * (persis sama, sampai ke tanggalnya) supaya export Excel/PDF bisa kasih
+     * judul & nama file spesifik ("Mingguan"/"Bulanan"/"Tahunan"). Tidak ada
+     * preset "Semester" — tanggal mulai/akhir semester beda-beda per sekolah
+     * dan tidak fixed di kalender, jadi tidak bisa ditebak dengan aman. Kalau
+     * rentangnya tidak cocok satupun (termasuk semester atau rentang bebas
+     * lain), null — pemanggil fallback ke judul generik "Laporan Absensi".
+     */
+    private function periodeLabel(Carbon $dari, Carbon $sampai): ?string
+    {
+        $label = [
+            'Minggu Ini' => 'Mingguan',
+            'Bulan Ini' => 'Bulanan',
+            'Tahun Ini' => 'Tahunan',
+        ];
+
+        foreach ($this->presetRanges() as $preset => [$presetDari, $presetSampai]) {
+            if ($dari->isSameDay($presetDari) && $sampai->isSameDay($presetSampai)) {
+                return $label[$preset];
+            }
+        }
+
+        return null;
     }
 
     private function periode(Request $request): array

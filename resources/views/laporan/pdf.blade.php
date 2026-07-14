@@ -50,7 +50,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>Laporan Absensi — {{ $pengaturan->nama_sekolah }}</h1>
+        <h1>Laporan Absensi {{ $periodeLabel ? $periodeLabel . ' ' : '' }}— {{ $pengaturan->nama_sekolah }}</h1>
         <div class="period">Periode: {{ $dari->format('d/m/Y') }} s/d {{ $sampai->format('d/m/Y') }}</div>
     </div>
 
