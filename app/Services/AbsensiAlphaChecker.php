@@ -15,24 +15,22 @@ use Throwable;
 /**
  * Dijadwalkan berkala (lihat perintah absensi:cek-alpha & jadwalnya di
  * routes/console.php), tapi tidak benar-benar memproses apa pun sampai
- * JAM_TUNGGU_SETELAH_PULANG jam setelah Pengaturan::mulai_pulang hari itu
- * — sebelum itu terlalu banyak siswa yang masih akan absen wajar (terlambat),
- * jadi menandai alpha di titik itu cuma menghasilkan notifikasi palsu ke
- * orang tua. Begitu lewat jam tunggu, siswa aktif yang sampai saat ini
- * belum punya baris absensi hari ini ditandai alpha, lalu (kalau email
+ * Pengaturan::mulai_pulang hari itu — sama persis dengan batas yang dipakai
+ * AbsensiRecorder buat menutup absen masuk (lihat komentar di
+ * AbsensiRecorder::record()), supaya begitu absen masuk ditutup, siswa yang
+ * memang tidak hadir langsung resmi alpha di jam yang sama, bukan nge-gantung
+ * beberapa jam dulu. Begitu lewat mulai_pulang, siswa aktif yang sampai saat
+ * ini belum punya baris absensi hari ini ditandai alpha, lalu (kalau email
  * orang tua terdaftar) dikirimi notifikasi. Kanal WhatsApp sempat dibangun
  * tapi untuk sekarang dipakai email dulu (belum ada penyedia WhatsApp API
  * yang dipilih) — no_hp_orang_tua tetap tersimpan di Siswa untuk dipakai
- * lagi nanti. AbsensiRecorder tahu cara menimpa baris alpha ini kalau siswa
- * ternyata scan beneran setelahnya (lihat komentar di AbsensiRecorder::record()).
+ * lagi nanti.
  */
 class AbsensiAlphaChecker
 {
-    private const JAM_TUNGGU_SETELAH_PULANG = 2;
-
     /**
      * Return jumlah siswa yang baru ditandai alpha (0 kalau hari libur atau
-     * belum lewat jam tunggu setelah mulai_pulang).
+     * belum lewat mulai_pulang).
      */
     public function jalankan(): int
     {
@@ -44,8 +42,7 @@ class AbsensiAlphaChecker
             return 0;
         }
 
-        $bolehJalan = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang)
-            ->addHours(self::JAM_TUNGGU_SETELAH_PULANG);
+        $bolehJalan = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
 
         if ($now->lessThan($bolehJalan)) {
             return 0;

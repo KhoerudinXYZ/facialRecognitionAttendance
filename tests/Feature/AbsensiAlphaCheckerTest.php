@@ -120,12 +120,11 @@ class AbsensiAlphaCheckerTest extends TestCase
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
     }
 
-    public function test_belum_menandai_alpha_sebelum_jam_tunggu_setelah_mulai_pulang(): void
+    public function test_belum_menandai_alpha_sebelum_mulai_pulang(): void
     {
         Mail::fake();
         Pengaturan::get()->update(['mulai_pulang' => '13:00']);
-        // Baru 1 jam setelah mulai_pulang (jam tunggunya 2 jam) -> masih terlalu awal.
-        Carbon::setTestNow('2026-07-13 14:00:00');
+        Carbon::setTestNow('2026-07-13 12:59:00');
         $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
 
         $jumlah = app(AbsensiAlphaChecker::class)->jalankan();
@@ -135,12 +134,13 @@ class AbsensiAlphaCheckerTest extends TestCase
         Mail::assertNothingSent();
     }
 
-    public function test_menandai_alpha_tepat_setelah_jam_tunggu_terlewati(): void
+    public function test_menandai_alpha_tepat_saat_mulai_pulang(): void
     {
         Mail::fake();
         Pengaturan::get()->update(['mulai_pulang' => '13:00']);
-        // Tepat 2 jam setelah mulai_pulang -> sudah boleh jalan.
-        Carbon::setTestNow('2026-07-13 15:00:00');
+        // Sama persis dengan titik AbsensiRecorder menutup absen masuk —
+        // tidak ada jam tunggu tambahan lagi (lihat AbsensiRecorder::record()).
+        Carbon::setTestNow('2026-07-13 13:00:00');
         $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
 
         $jumlah = app(AbsensiAlphaChecker::class)->jalankan();

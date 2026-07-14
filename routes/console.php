@@ -17,11 +17,11 @@ Artisan::command('absensi:cek-alpha', function (AbsensiAlphaChecker $checker) {
 // Dijalankan tiap jam (bukan sekali semalam) supaya orang tua siswa yang
 // benar-benar tidak masuk tahu di hari yang sama, bukan tengah malam saat
 // semuanya sudah lewat. AbsensiAlphaChecker sendiri yang menahan diri
-// (tidak memproses apa pun) sampai beberapa jam setelah mulai_pulang,
-// jadi aman dipanggil sesering ini — siswa yang scan telat tapi wajar
-// tetap kebagian waktu sebelum ditandai alpha. Perlu cron beneran di
-// server (`* * * * * php artisan schedule:run`) supaya ini benar-benar
-// berjalan otomatis — tanpa itu, jalankan manual: `php artisan absensi:cek-alpha`.
+// (tidak memproses apa pun) sampai Pengaturan::mulai_pulang — titik yang
+// sama dengan penutupan absen masuk di AbsensiRecorder — jadi aman
+// dipanggil sesering ini. Perlu cron beneran di server
+// (`* * * * * php artisan schedule:run`) supaya ini benar-benar berjalan
+// otomatis — tanpa itu, jalankan manual: `php artisan absensi:cek-alpha`.
 Schedule::command('absensi:cek-alpha')->hourly()->between('12:00', '22:00');
 
 // Backup harian (spatie/laravel-backup): dump database + storage/app/public
