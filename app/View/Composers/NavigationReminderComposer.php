@@ -10,9 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
- * Menyiapkan data lonceng notifikasi wali kelas (dipakai di navigasi, jadi
- * harus dihitung sekali per request lewat composer, bukan per controller).
- * Admin tidak dapat lonceng ini — reminder ini spesifik kelas binaan.
+ * Menyiapkan data lonceng notifikasi + kelas binaan wali kelas (dipakai di
+ * navigasi, jadi harus dihitung sekali per request lewat composer, bukan per
+ * controller). Admin tidak dapat lonceng ini — reminder ini spesifik kelas
+ * binaan.
  */
 class NavigationReminderComposer
 {
@@ -22,9 +23,11 @@ class NavigationReminderComposer
 
         $siswaPerluPerhatian = collect();
         $siswaBelumWajah = collect();
+        $kelasBinaanNav = collect();
 
         if ($user && $user->isWaliKelas()) {
-            $kelasIds = Kelas::where('wali_kelas_id', $user->id)->pluck('id');
+            $kelasBinaanNav = Kelas::where('wali_kelas_id', $user->id)->orderBy('nama_kelas')->get();
+            $kelasIds = $kelasBinaanNav->pluck('id');
 
             if ($kelasIds->isNotEmpty()) {
                 $today = Pengaturan::sekarang()->startOfDay();
@@ -63,6 +66,7 @@ class NavigationReminderComposer
         $view->with([
             'reminderPerluPerhatian' => $siswaPerluPerhatian,
             'reminderBelumWajah' => $siswaBelumWajah,
+            'kelasBinaanNav' => $kelasBinaanNav,
         ]);
     }
 }

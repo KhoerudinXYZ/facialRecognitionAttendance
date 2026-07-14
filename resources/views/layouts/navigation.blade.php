@@ -17,7 +17,7 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
-                    <x-nav-dropdown title="{{ __('Absensi') }}" icon="clock" :active="request()->routeIs(['absensi.*', 'laporan.*'])">
+                    <x-nav-dropdown title="{{ __('Presensi') }}" icon="clock" :active="request()->routeIs(['absensi.*', 'laporan.*'])">
                         <x-dropdown-link :href="route('absensi.index')">
                             {{ __('Rekap') }}
                         </x-dropdown-link>
@@ -26,14 +26,21 @@
                         </x-dropdown-link>
                     </x-nav-dropdown>
 
-                    <x-nav-dropdown title="{{ __('Data Master') }}" icon="user-circle" :active="request()->routeIs(['siswa.*', 'kelas.*'])">
-                        <x-dropdown-link :href="route('siswa.index')">
-                            {{ __('Siswa') }}
-                        </x-dropdown-link>
-                        <x-dropdown-link :href="route('kelas.index')">
-                            {{ __('Kelas') }}
-                        </x-dropdown-link>
-                    </x-nav-dropdown>
+                    @if (Auth::user()->isAdmin())
+                        <x-nav-dropdown title="{{ __('Data Master') }}" icon="user-circle" :active="request()->routeIs(['siswa.*', 'kelas.*'])">
+                            <x-dropdown-link :href="route('siswa.index')">
+                                {{ __('Siswa') }}
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('kelas.index')">
+                                {{ __('Kelas') }}
+                            </x-dropdown-link>
+                        </x-nav-dropdown>
+                    @else
+                        <x-nav-link :href="route('siswa.index')" :active="request()->routeIs('siswa.*')">
+                            <x-icon name="user-circle" class="w-4 h-4 mr-1.5" />
+                            {{ __('Siswa') }}{{ $kelasBinaanNav->count() === 1 ? ' ' . $kelasBinaanNav->first()->nama_kelas : '' }}
+                        </x-nav-link>
+                    @endif
 
                     @if (Auth::user()->isAdmin())
                         <x-nav-dropdown title="{{ __('Administrasi') }}" icon="cog" :active="request()->routeIs(['staff.*', 'pengaturan.*', 'hari-libur.*', 'absensi.audit', 'notifikasi-absensi.*'])">
@@ -161,7 +168,7 @@
             </x-responsive-nav-link>
 
             <div class="px-4 pt-2 pb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">
-                <x-icon name="clock" class="w-3.5 h-3.5" /> {{ __('Absensi') }}
+                <x-icon name="clock" class="w-3.5 h-3.5" /> {{ __('Presensi') }}
             </div>
             <x-responsive-nav-link :href="route('absensi.index')" :active="request()->routeIs('absensi.index')">
                 {{ __('Rekap') }}
@@ -170,15 +177,24 @@
                 {{ __('Laporan') }}
             </x-responsive-nav-link>
 
-            <div class="px-4 pt-2 pb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">
-                <x-icon name="user-circle" class="w-3.5 h-3.5" /> {{ __('Data Master') }}
-            </div>
-            <x-responsive-nav-link :href="route('siswa.index')" :active="request()->routeIs('siswa.*')">
-                {{ __('Siswa') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('kelas.index')" :active="request()->routeIs('kelas.*')">
-                {{ __('Kelas') }}
-            </x-responsive-nav-link>
+            @if (Auth::user()->isAdmin())
+                <div class="px-4 pt-2 pb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">
+                    <x-icon name="user-circle" class="w-3.5 h-3.5" /> {{ __('Data Master') }}
+                </div>
+                <x-responsive-nav-link :href="route('siswa.index')" :active="request()->routeIs('siswa.*')">
+                    {{ __('Siswa') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('kelas.index')" :active="request()->routeIs('kelas.*')">
+                    {{ __('Kelas') }}
+                </x-responsive-nav-link>
+            @else
+                <x-responsive-nav-link :href="route('siswa.index')" :active="request()->routeIs('siswa.*')">
+                    <span class="inline-flex items-center gap-1.5">
+                        <x-icon name="user-circle" class="w-4 h-4" />
+                        {{ __('Siswa') }}{{ $kelasBinaanNav->count() === 1 ? ' ' . $kelasBinaanNav->first()->nama_kelas : '' }}
+                    </span>
+                </x-responsive-nav-link>
+            @endif
 
             @if (Auth::user()->isWaliKelas() && ($reminderPerluPerhatian->isNotEmpty() || $reminderBelumWajah->isNotEmpty()))
                 <div class="px-4 pt-2 pb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">
