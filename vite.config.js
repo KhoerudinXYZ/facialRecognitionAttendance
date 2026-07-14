@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/face-enroll.js',
                 'resources/js/face-kiosk.js',
+                'resources/js/pengaturan-lokasi.js',
             ],
             refresh: true,
         }),

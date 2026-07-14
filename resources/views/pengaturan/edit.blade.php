@@ -105,6 +105,14 @@
 
             <form id="form-lokasi" action="{{ route('pengaturan.lokasi') }}" method="POST" class="space-y-4">
                 @csrf @method('PUT')
+
+                <div id="map-lokasi" class="w-full h-72 rounded-md border border-gray-200 dark:border-gray-700"
+                     data-lat="{{ $pengaturan->lokasi_lat }}" data-lng="{{ $pengaturan->lokasi_lng }}"
+                     data-radius="{{ $pengaturan->lokasi_radius_meter }}"></div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    Klik peta atau geser penanda untuk mengatur titik sekolah — kolom di bawah ikut terisi otomatis.
+                </p>
+
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <x-input-label for="lokasi_lat" value="Latitude" />
@@ -143,20 +151,5 @@
         </div>
     </div>
 
-    <script>
-        document.getElementById('btn-lokasi-sekarang')?.addEventListener('click', () => {
-            if (!navigator.geolocation) {
-                alert('Browser tidak mendukung lokasi GPS.');
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    document.getElementById('lokasi_lat').value = pos.coords.latitude.toFixed(7);
-                    document.getElementById('lokasi_lng').value = pos.coords.longitude.toFixed(7);
-                },
-                () => alert('Gagal mengambil lokasi. Pastikan izin lokasi diaktifkan.'),
-                { enableHighAccuracy: true, timeout: 15000 }
-            );
-        });
-    </script>
+    @vite('resources/js/pengaturan-lokasi.js')
 </x-app-layout>
