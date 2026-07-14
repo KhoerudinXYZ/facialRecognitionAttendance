@@ -9,6 +9,7 @@ use App\Models\Pengaturan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\Color;
 use OpenSpout\Common\Entity\Style\Style;
@@ -51,9 +52,8 @@ class LaporanController extends Controller
         $liburDalamPeriode = HariLibur::whereBetween('tanggal', [$dari->toDateString(), $sampai->toDateString()])->count();
         $barisTanpaWali = $data->filter(fn (Absensi $a) => ! $a->siswa?->kelas?->waliKelas)->count();
 
-        $periodeLabel = $this->periodeLabel($dari, $sampai);
-        $filename = 'laporan-absensi' . ($periodeLabel ? '-' . strtolower($periodeLabel) : '')
-            . '-' . $dari->format('Ymd') . '-' . $sampai->format('Ymd') . '.xlsx';
+        $filename = 'laporan-absensi-' . $this->kelasFilenamePart($request, $kelasId)
+            . $this->laporanFilenameBase($dari, $sampai) . '.xlsx';
 
         return response()->streamDownload(function () use ($data, $liburDalamPeriode, $barisTanpaWali) {
             $writer = new Writer();
@@ -151,8 +151,8 @@ class LaporanController extends Controller
             'periodeLabel' => $periodeLabel,
         ])->setPaper('a4', 'landscape');
 
-        $filename = 'laporan-absensi' . ($periodeLabel ? '-' . strtolower($periodeLabel) : '')
-            . '-' . $dari->format('Ymd') . '-' . $sampai->format('Ymd') . '.pdf';
+        $filename = 'laporan-absensi-' . $this->kelasFilenamePart($request, $kelasId)
+            . $this->laporanFilenameBase($dari, $sampai) . '.pdf';
 
         return $pdf->download($filename);
     }
@@ -197,6 +197,45 @@ class LaporanController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Nama file export: kalau periode cocok preset, pakai identitas periode
+     * singkat (nomor minggu ISO / bulan / tahun) tanpa rentang tanggal penuh
+     * — sudah jelas dari labelnya, rentang tanggal jadi berlebihan. Rentang
+     * bebas yang tidak cocok preset (termasuk semester) tetap pakai rentang
+     * tanggal penuh karena itu satu-satunya identitas yang ada.
+     */
+    private function laporanFilenameBase(Carbon $dari, Carbon $sampai): string
+    {
+        return match ($this->periodeLabel($dari, $sampai)) {
+            'Mingguan' => 'mingguan-' . $dari->format('o') . '-W' . $dari->format('W'),
+            'Bulanan' => 'bulanan-' . $dari->format('Y-m'),
+            'Tahunan' => 'tahunan-' . $dari->format('Y'),
+            default => $dari->format('Ymd') . '-' . $sampai->format('Ymd'),
+        };
+    }
+
+    /**
+     * Nama kelas buat nama file export, cuma kalau laporannya memang
+     * dibatasi ke satu kelas tertentu: admin yang eksplisit pilih kelas_id,
+     * atau wali kelas dengan tepat 1 kelas binaan (implicit — wali kelas
+     * tidak dapat pilihan "Semua Kelas" sama sekali, lihat visibleTo() di
+     * Kelas). "Semua Kelas" (admin tanpa filter, atau wali kelas dengan 0/>1
+     * kelas binaan) sengaja dibiarkan tanpa info kelas di nama file.
+     */
+    private function kelasFilenamePart(Request $request, ?int $kelasId): string
+    {
+        $kelas = null;
+
+        if ($kelasId) {
+            $kelas = Kelas::find($kelasId);
+        } elseif ($request->user()->isWaliKelas()) {
+            $kelasBinaan = Kelas::where('wali_kelas_id', $request->user()->id)->get();
+            $kelas = $kelasBinaan->count() === 1 ? $kelasBinaan->first() : null;
+        }
+
+        return $kelas ? Str::slug($kelas->nama_kelas) . '-' : '';
     }
 
     private function periode(Request $request): array
