@@ -140,6 +140,7 @@ class LaporanController extends Controller
         $barisTanpaWali = $data->filter(fn (Absensi $a) => ! $a->siswa?->kelas?->waliKelas)->count();
 
         $periodeLabel = $this->periodeLabel($dari, $sampai);
+        $kelasCakupan = $this->kelasCakupan($request, $kelasId);
 
         $pdf = Pdf::loadView('laporan.pdf', [
             'data' => $data,
@@ -149,6 +150,7 @@ class LaporanController extends Controller
             'liburDalamPeriode' => $liburDalamPeriode,
             'barisTanpaWali' => $barisTanpaWali,
             'periodeLabel' => $periodeLabel,
+            'kelasCakupan' => $kelasCakupan,
         ])->setPaper('a4', 'landscape');
 
         $filename = 'laporan-absensi-' . $this->kelasFilenamePart($request, $kelasId)
@@ -217,23 +219,32 @@ class LaporanController extends Controller
     }
 
     /**
-     * Nama kelas buat nama file export, cuma kalau laporannya memang
+     * Kelas tunggal yang jadi cakupan laporan ini, cuma kalau memang
      * dibatasi ke satu kelas tertentu: admin yang eksplisit pilih kelas_id,
      * atau wali kelas dengan tepat 1 kelas binaan (implicit — wali kelas
      * tidak dapat pilihan "Semua Kelas" sama sekali, lihat visibleTo() di
      * Kelas). "Semua Kelas" (admin tanpa filter, atau wali kelas dengan 0/>1
-     * kelas binaan) sengaja dibiarkan tanpa info kelas di nama file.
+     * kelas binaan) sengaja return null — dipakai bareng di nama file &
+     * judul PDF supaya konsisten.
      */
+    private function kelasCakupan(Request $request, ?int $kelasId): ?Kelas
+    {
+        if ($kelasId) {
+            return Kelas::find($kelasId);
+        }
+
+        if ($request->user()->isWaliKelas()) {
+            $kelasBinaan = Kelas::where('wali_kelas_id', $request->user()->id)->get();
+
+            return $kelasBinaan->count() === 1 ? $kelasBinaan->first() : null;
+        }
+
+        return null;
+    }
+
     private function kelasFilenamePart(Request $request, ?int $kelasId): string
     {
-        $kelas = null;
-
-        if ($kelasId) {
-            $kelas = Kelas::find($kelasId);
-        } elseif ($request->user()->isWaliKelas()) {
-            $kelasBinaan = Kelas::where('wali_kelas_id', $request->user()->id)->get();
-            $kelas = $kelasBinaan->count() === 1 ? $kelasBinaan->first() : null;
-        }
+        $kelas = $this->kelasCakupan($request, $kelasId);
 
         return $kelas ? Str::slug($kelas->nama_kelas) . '-' : '';
     }

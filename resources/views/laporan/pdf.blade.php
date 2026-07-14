@@ -51,7 +51,12 @@
 <body>
     <div class="header">
         <h1>Laporan Absensi {{ $periodeLabel ? $periodeLabel . ' ' : '' }}— {{ $pengaturan->nama_sekolah }}</h1>
-        <div class="period">Periode: {{ $dari->format('d/m/Y') }} s/d {{ $sampai->format('d/m/Y') }}</div>
+        <div class="period">
+            Periode: {{ $dari->format('d/m/Y') }} s/d {{ $sampai->format('d/m/Y') }}
+            @if ($kelasCakupan)
+                &middot; Kelas: {{ $kelasCakupan->nama_kelas }}
+            @endif
+        </div>
     </div>
 
     <div class="content">
