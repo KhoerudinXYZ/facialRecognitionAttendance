@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     window.location.href = dashboardUrl;
                 }, 1800);
-            } else if (data.status === 'already' || data.status === 'libur' || data.status === 'lokasi') {
+            } else if (data.status === 'already' || data.status === 'libur' || data.status === 'lokasi' || data.status === 'tutup') {
                 showToast('ℹ ' + data.message, false);
                 setVisualState('idle');
             }

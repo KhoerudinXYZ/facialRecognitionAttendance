@@ -29,7 +29,9 @@ class SiswaAbsensiController extends Controller
         /** @var Siswa $siswa */
         $siswa = Auth::guard('siswa')->user();
 
-        $today = Pengaturan::sekarang()->startOfDay();
+        $pengaturan = Pengaturan::get();
+        $now = $pengaturan->waktuSekarang();
+        $today = $now->copy()->startOfDay();
 
         if (HariLibur::isLibur($today)) {
             return redirect()->route('siswa.dashboard')->with('info', 'Hari ini libur, absensi tidak aktif.');
@@ -38,6 +40,14 @@ class SiswaAbsensiController extends Controller
         $absenHariIni = $siswa->absensi()->whereDate('tanggal', $today)->first();
         if ($absenHariIni && $absenHariIni->jam_pulang) {
             return redirect()->route('siswa.dashboard')->with('info', 'Kamu sudah absen masuk & pulang hari ini.');
+        }
+
+        // Sama seperti gate di AbsensiRecorder: siswa yang belum absen masuk
+        // sama sekali (atau masih alpha) tidak perlu buka kamera segala kalau
+        // jam absen masuk sudah ditutup — tidak ada yang bisa dicatat.
+        $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
+        if ((! $absenHariIni || $absenHariIni->status === 'alpha') && $now->greaterThanOrEqualTo($mulaiPulang)) {
+            return redirect()->route('siswa.dashboard')->with('info', "Jam absen masuk sudah ditutup untuk hari ini (mulai {$pengaturan->mulai_pulang}).");
         }
 
         $siswa->load('faceDescriptors');
@@ -51,7 +61,7 @@ class SiswaAbsensiController extends Controller
         return view('siswa-auth.absen', [
             'siswa' => $siswa,
             'labeledDescriptors' => $labeledDescriptors,
-            'pengaturan' => Pengaturan::get(),
+            'pengaturan' => $pengaturan,
         ]);
     }
 

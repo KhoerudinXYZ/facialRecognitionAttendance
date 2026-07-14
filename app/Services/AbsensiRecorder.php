@@ -51,6 +51,25 @@ class AbsensiRecorder
         // hari (bukan hasil scan siswa) — kalau siswa ternyata muncul dan
         // scan beneran setelah itu, ini tetap harus diperlakukan sebagai
         // absen masuk asli (menimpa baris alpha), bukan "sudah absen".
+        //
+        // Tapi itu cuma berlaku sampai mulai_pulang: absen masuk yang baru
+        // muncul setelah pembelajaran usai (mis. siswa yang benar-benar tidak
+        // masuk lalu nongol sore hari) tidak masuk akal dicatat sebagai
+        // hadir/terlambat — apalagi karena mulai_pulang sudah lewat, scan
+        // berikutnya dari siswa yang sama langsung kebagian absen pulang
+        // juga, jadi "masuk & pulang" keduanya tercatat dalam hitungan detik.
+        // Baris alpha (kalau ada) dibiarkan apa adanya di sini; kalau belum
+        // ada baris sama sekali, biarkan kosong sampai AbsensiAlphaChecker
+        // menandainya alpha di jadwal berikutnya.
+        $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
+        if ((! $existing || $existing->status === 'alpha') && $now->greaterThanOrEqualTo($mulaiPulang)) {
+            return [
+                'status' => 'tutup',
+                'message' => "Jam absen masuk sudah ditutup untuk hari ini (mulai {$pengaturan->mulai_pulang}). Hubungi wali kelas kalau ini keliru.",
+                'nama' => $siswa->nama,
+            ];
+        }
+
         if (! $existing || $existing->status === 'alpha') {
             if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng)) {
                 return $tolakLokasi;

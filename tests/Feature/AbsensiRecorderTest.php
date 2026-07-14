@@ -213,6 +213,38 @@ class AbsensiRecorderTest extends TestCase
         ]);
     }
 
+    public function test_absen_masuk_ditolak_setelah_mulai_pulang_untuk_siswa_yang_belum_absen(): void
+    {
+        Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        Carbon::setTestNow('2026-07-13 13:00:00');
+        $siswa = $this->siswa();
+
+        $result = app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertSame('tutup', $result['status']);
+        $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
+    }
+
+    public function test_absen_masuk_ditolak_setelah_mulai_pulang_untuk_siswa_yang_sudah_alpha(): void
+    {
+        Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        $siswa = $this->siswa();
+
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        \App\Models\Absensi::create([
+            'siswa_id' => $siswa->id,
+            'tanggal' => '2026-07-13',
+            'status' => 'alpha',
+            'metode' => 'manual',
+        ]);
+
+        Carbon::setTestNow('2026-07-13 17:20:00');
+        $result = app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertSame('tutup', $result['status']);
+        $this->assertDatabaseHas('absensi', ['siswa_id' => $siswa->id, 'status' => 'alpha', 'jam_masuk' => null]);
+    }
+
     public function test_absen_masuk_mengirim_konfirmasi_kehadiran_ke_email_orang_tua(): void
     {
         Mail::fake();
