@@ -40,6 +40,7 @@ class LaporanController extends Controller
             'kelasList' => $kelasList,
             'liburDalamPeriode' => $liburDalamPeriode,
             'barisTanpaWali' => $barisTanpaWali,
+            'presets' => $this->presetRanges(),
         ]);
     }
 
@@ -146,6 +147,22 @@ class LaporanController extends Controller
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('laporan-absensi-' . $dari->format('Ymd') . '-' . $sampai->format('Ymd') . '.pdf');
+    }
+
+    /**
+     * Shortcut rentang tanggal umum (bukan mode/query terpisah — cuma preset
+     * "dari"/"sampai" siap pakai), dihitung dari Pengaturan::sekarang() supaya
+     * konsisten dengan simulasi_waktu seperti bagian laporan lainnya.
+     */
+    private function presetRanges(): array
+    {
+        $sekarang = Pengaturan::sekarang();
+
+        return [
+            'Minggu Ini' => [$sekarang->copy()->startOfWeek(), $sekarang->copy()],
+            'Bulan Ini' => [$sekarang->copy()->startOfMonth(), $sekarang->copy()],
+            'Tahun Ini' => [$sekarang->copy()->startOfYear(), $sekarang->copy()],
+        ];
     }
 
     private function periode(Request $request): array

@@ -42,6 +42,15 @@
             <a href="{{ route('laporan.pdf', $params) }}" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg">
                 <x-icon name="download" class="w-4 h-4" /> Export PDF
             </a>
+
+            <div class="w-full flex flex-wrap gap-2 pt-1">
+                @foreach ($presets as $label => [$presetDari, $presetSampai])
+                    <a href="{{ route('laporan.index', ['dari' => $presetDari->toDateString(), 'sampai' => $presetSampai->toDateString(), 'kelas_id' => $kelasId]) }}"
+                       class="text-xs px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
         </form>
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
