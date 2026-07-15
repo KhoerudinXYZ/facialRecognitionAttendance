@@ -67,7 +67,7 @@
             </main>
 
             <nav class="fixed inset-x-0 bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-40">
-                <div class="max-w-lg mx-auto grid grid-cols-4">
+                <div class="max-w-lg mx-auto grid grid-cols-5">
                     @php
                         $todayNav = \App\Models\Pengaturan::sekarang()->startOfDay();
                         $absenHariIniNav = $siswaUser->absensi()->whereDate('tanggal', $todayNav)->first();
@@ -77,6 +77,7 @@
                             ['route' => 'siswa.dashboard', 'match' => 'siswa.dashboard', 'icon' => 'home', 'label' => 'Beranda'],
                             ['route' => 'siswa.absen', 'match' => 'siswa.absen*', 'icon' => 'camera', 'label' => 'Absen', 'disabled' => $absenNavNonaktif],
                             ['route' => 'siswa.riwayat', 'match' => 'siswa.riwayat', 'icon' => 'clock', 'label' => 'Riwayat'],
+                            ['route' => 'siswa.izin', 'match' => 'siswa.izin*', 'icon' => 'clipboard', 'label' => 'Izin/Sakit'],
                             ['route' => 'siswa.wajah', 'match' => ['siswa.wajah', 'siswa.enroll.*'], 'icon' => 'user-circle', 'label' => 'Wajah'],
                         ];
                     @endphp

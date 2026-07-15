@@ -17,12 +17,15 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
 
-                    <x-nav-dropdown title="{{ __('Presensi') }}" icon="clock" :active="request()->routeIs(['absensi.*', 'laporan.*'])">
+                    <x-nav-dropdown title="{{ __('Presensi') }}" icon="clock" :active="request()->routeIs(['absensi.*', 'laporan.*', 'pengajuan-izin.*'])">
                         <x-dropdown-link :href="route('absensi.index')">
                             {{ __('Rekap') }}
                         </x-dropdown-link>
                         <x-dropdown-link :href="route('laporan.index')">
                             {{ __('Laporan') }}
+                        </x-dropdown-link>
+                        <x-dropdown-link :href="route('pengajuan-izin.index')">
+                            {{ __('Pengajuan Izin/Sakit') }}
                         </x-dropdown-link>
                     </x-nav-dropdown>
 
@@ -175,6 +178,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('laporan.index')" :active="request()->routeIs('laporan.*')">
                 {{ __('Laporan') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('pengajuan-izin.index')" :active="request()->routeIs('pengajuan-izin.*')">
+                {{ __('Pengajuan Izin/Sakit') }}
             </x-responsive-nav-link>
 
             @if (Auth::user()->isAdmin())

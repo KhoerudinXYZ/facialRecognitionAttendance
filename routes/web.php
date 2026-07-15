@@ -7,6 +7,7 @@ use App\Http\Controllers\HariLiburController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\NotifikasiAbsensiController;
+use App\Http\Controllers\PengajuanIzinController;
 use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SiswaController;
@@ -61,6 +62,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('absensi', [AbsensiController::class, 'index'])->name('absensi.index');
     Route::post('absensi/manual', [AbsensiController::class, 'manual'])->name('absensi.manual');
     Route::delete('absensi/{absensi}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+
+    // Pengajuan izin/sakit mandiri siswa (approval admin/wali kelas)
+    Route::get('pengajuan-izin', [PengajuanIzinController::class, 'index'])->name('pengajuan-izin.index');
+    Route::post('pengajuan-izin/{pengajuanIzin}/approve', [PengajuanIzinController::class, 'approve'])->name('pengajuan-izin.approve');
+    Route::post('pengajuan-izin/{pengajuanIzin}/reject', [PengajuanIzinController::class, 'reject'])->name('pengajuan-izin.reject');
 
     // Laporan
     Route::get('laporan', [LaporanController::class, 'index'])->name('laporan.index');
