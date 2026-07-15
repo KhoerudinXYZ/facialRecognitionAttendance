@@ -6,6 +6,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ config('app.name', 'Laravel') }}</title>
+        <link rel="icon" type="image/png" href="{{ asset('images/logo-sekolah.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -32,8 +33,8 @@
                 <x-icon name="moon" class="w-5 h-5 block dark:hidden" />
             </button>
 
-            <a href="/" class="w-16 h-16 rounded-full bg-white/15 ring-2 ring-white/30 flex items-center justify-center text-white mb-4">
-                <x-icon :name="$icon" class="w-8 h-8" />
+            <a href="/" class="w-16 h-16 rounded-full bg-white flex items-center justify-center ring-2 ring-white/30 mb-4 overflow-hidden">
+                <img src="{{ asset('images/logo-sekolah.png') }}" alt="{{ config('app.name', 'Laravel') }}" class="w-14 h-14 object-contain">
             </a>
             <p class="text-white font-semibold mb-6">{{ config('app.name', 'Laravel') }}</p>
 
