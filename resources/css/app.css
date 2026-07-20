@@ -1,0 +1,145 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] { display: none !important; }
+
+/* Custom Sci-Fi & Premium UI Styles */
+
+/* Laser Line Animation */
+@keyframes laser-scan {
+    0%, 100% {
+        top: 0%;
+    }
+    50% {
+        top: 100%;
+    }
+}
+
+.laser-line {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #22c55e, transparent);
+    box-shadow: 0 0 12px 2px rgba(34, 197, 94, 0.8);
+    animation: laser-scan 3s infinite ease-in-out;
+}
+
+.laser-line-indigo {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #6366f1, transparent);
+    box-shadow: 0 0 12px 2px rgba(99, 102, 241, 0.8);
+    animation: laser-scan 3.5s infinite ease-in-out;
+}
+
+/* Glow Pulses */
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(99, 102, 241, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 20px 5px rgba(99, 102, 241, 0.5);
+    }
+}
+
+.glow-indigo {
+    animation: glow-pulse 2s infinite ease-in-out;
+}
+
+@keyframes green-glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(34, 197, 94, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 20px 5px rgba(34, 197, 94, 0.6);
+    }
+}
+
+.glow-green {
+    animation: green-glow-pulse 2s infinite ease-in-out;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass-card {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+}
+
+/* Corner Brackets for Camera Frame */
+.corner-bracket::before,
+.corner-bracket::after,
+.corner-bracket-inner::before,
+.corner-bracket-inner::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: #6366f1; /* Indigo default */
+    border-style: solid;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Top-Left */
+.corner-bracket::before {
+    top: 0;
+    left: 0;
+    border-width: 3px 0 0 3px;
+    border-top-left-radius: 8px;
+}
+
+/* Top-Right */
+.corner-bracket::after {
+    top: 0;
+    right: 0;
+    border-width: 3px 3px 0 0;
+    border-top-right-radius: 8px;
+}
+
+/* Bottom-Left */
+.corner-bracket-inner::before {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 3px 3px;
+    border-bottom-left-radius: 8px;
+}
+
+/* Bottom-Right */
+.corner-bracket-inner::after {
+    bottom: 0;
+    right: 0;
+    border-width: 0 3px 3px 0;
+    border-bottom-right-radius: 8px;
+}
+
