@@ -28,7 +28,7 @@
             <div id="kiosk-ring-scanning" class="absolute -inset-1 rounded-3xl border-2 border-indigo-500/20 border-t-indigo-500 animate-spin hidden"></div>
 
             <!-- Video Container -->
-            <div class="absolute inset-2.5 rounded-2xl overflow-hidden bg-slate-950 shadow-inner relative group border border-slate-800">
+            <div class="absolute inset-2.5 rounded-2xl overflow-hidden bg-slate-950 shadow-inner group border border-slate-800">
                 <video id="kiosk-video" autoplay muted playsinline class="w-full h-full object-cover scale-x-[-1]"></video>
                 <canvas id="kiosk-overlay" class="absolute inset-0 w-full h-full"></canvas>
                 
