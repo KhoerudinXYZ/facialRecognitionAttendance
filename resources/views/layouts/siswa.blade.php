@@ -24,7 +24,10 @@
     <body class="font-sans antialiased">
         @php $siswaUser = auth('siswa')->user(); @endphp
 
-        <div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+        <div class="page-bg min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300 relative">
+            <!-- Ambient orbs -->
+            <div class="absolute top-0 right-0 w-[350px] h-[350px] bg-indigo-500/7 dark:bg-indigo-500/12 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+            <div class="absolute bottom-1/4 left-0 w-[280px] h-[280px] bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
             <!-- Header (Sticky & Glassmorphism) -->
             <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm">
                 <div class="max-w-lg mx-auto px-4 py-3 flex justify-between items-center">
@@ -32,15 +35,15 @@
                         @if ($siswaUser->foto)
                             <img src="{{ \Illuminate\Support\Facades\Storage::url($siswaUser->foto) }}"
                                  alt="{{ $siswaUser->nama }}"
-                                 class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/20">
+                                 class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500 shadow-sm">
                         @else
-                            <div class="w-10 h-10 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 ring-2 ring-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold font-outfit">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-indigo-700 ring-2 ring-indigo-500/30 flex items-center justify-center text-white font-extrabold font-lexend text-sm shadow-sm">
                                 {{ Illuminate\Support\Str::of($siswaUser->nama)->substr(0, 1)->upper() }}
                             </div>
                         @endif
                         <div>
-                            <p class="font-semibold text-slate-800 dark:text-slate-100 text-sm leading-tight font-outfit">{{ $siswaUser->nama }}</p>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{{ $siswaUser->kelas->nama_kelas ?? '-' }}</p>
+                            <p class="font-lexend font-bold text-slate-900 dark:text-slate-50 text-sm leading-tight tracking-tight">{{ $siswaUser->nama }}</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium font-jakarta">{{ $siswaUser->kelas->nama_kelas ?? '-' }}</p>
                         </div>
                     </a>
                     <div class="flex items-center gap-1.5">
@@ -60,6 +63,8 @@
                     </div>
                 </div>
             </header>
+            <!-- Gradient accent strip under header -->
+            <div class="h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent"></div>
 
             @include('layouts.flash')
 
@@ -69,8 +74,8 @@
             </main>
 
             <!-- Bottom Navigation Bar (Glassmorphism & Floating look) -->
-            <nav class="fixed inset-x-0 bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-800/50 z-40 shadow-lg">
-                <div class="max-w-lg mx-auto grid grid-cols-5 py-1">
+            <nav class="fixed inset-x-0 bottom-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/80 z-40 shadow-2xl rounded-t-3xl">
+                <div class="max-w-lg mx-auto grid grid-cols-5 py-2 px-2">
                     @php
                         $todayNav = \App\Models\Pengaturan::sekarang()->startOfDay();
                         $absenHariIniNav = $siswaUser->absensi()->whereDate('tanggal', $todayNav)->first();
@@ -87,19 +92,19 @@
                     @foreach ($navItems as $item)
                         @php $active = request()->routeIs($item['match']); @endphp
                         @if ($item['disabled'] ?? false)
-                            <div class="flex flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-medium text-slate-300 dark:text-slate-700 cursor-not-allowed select-none"
+                            <div class="flex flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-semibold text-slate-300 dark:text-slate-700 cursor-not-allowed select-none"
                                  title="Absensi tidak aktif saat ini">
                                 <x-icon :name="$item['icon']" class="w-5.5 h-5.5 opacity-40" />
                                 <span>{{ $item['label'] }}</span>
                             </div>
                         @else
                             <a href="{{ route($item['route']) }}"
-                               class="flex flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-semibold transition-all relative
-                                      {{ $active ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300' }}">
-                                <x-icon :name="$item['icon']" class="w-5.5 h-5.5" />
+                               class="flex flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-bold font-lexend transition-all relative active:scale-95
+                                      {{ $active ? 'text-indigo-600 dark:text-indigo-400 nav-pill-active' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300' }}">
+                                <x-icon :name="$item['icon']" class="w-5.5 h-5.5 stroke-[2.2]" />
                                 <span>{{ $item['label'] }}</span>
                                 @if ($active)
-                                    <span class="absolute bottom-0 w-1 h-1 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
+                                    <span class="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shadow-sm shadow-indigo-500"></span>
                                 @endif
                             </a>
                         @endif

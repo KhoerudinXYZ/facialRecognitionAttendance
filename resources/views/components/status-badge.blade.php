@@ -2,15 +2,16 @@
 
 @php
     $map = [
-        'hadir' => 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-        'terlambat' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
-        'izin' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-        'sakit' => 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
-        'alpha' => 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+        'hadir'     => 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 border border-emerald-500',
+        'terlambat' => 'bg-amber-600 text-white shadow-sm shadow-amber-600/20 border border-amber-500',
+        'izin'      => 'bg-purple-600 text-white shadow-sm shadow-purple-600/20 border border-purple-500',
+        'sakit'     => 'bg-purple-600 text-white shadow-sm shadow-purple-600/20 border border-purple-500',
+        'alpha'     => 'bg-rose-600 text-white shadow-sm shadow-rose-600/20 border border-rose-500',
+        'libur'     => 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 border border-indigo-500',
     ];
-    $cls = $map[$status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    $cls = $map[$status] ?? 'bg-slate-700 text-white border border-slate-600';
 @endphp
 
-<span {{ $attributes->merge(['class' => "inline-flex px-2 py-0.5 rounded-full text-xs font-medium {$cls}"]) }}>
+<span {{ $attributes->merge(['class' => "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold font-lexend {$cls}"]) }}>
     {{ ucfirst($status) }}
 </span>

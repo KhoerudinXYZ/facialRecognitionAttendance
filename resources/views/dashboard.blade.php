@@ -33,20 +33,20 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 px-4 sm:px-0">
             @php
                 $cards = [
-                    ['label' => 'Total Siswa', 'value' => $totalSiswa, 'icon' => 'users', 'color' => 'from-blue-500/10 to-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20', 'route' => route('siswa.index')],
-                    ['label' => 'Hadir Hari Ini', 'value' => $hadir, 'icon' => 'check-circle', 'color' => 'from-green-500/10 to-green-500/5 text-green-600 dark:text-green-400 border-green-500/20', 'route' => route('absensi.index')],
-                    ['label' => 'Terlambat', 'value' => $terlambat, 'icon' => 'clock', 'color' => 'from-amber-500/10 to-amber-500/5 text-amber-600 dark:text-amber-400 border-amber-500/20', 'route' => route('absensi.index')],
-                    ['label' => 'Izin / Sakit', 'value' => $izinSakit, 'icon' => 'alert-circle', 'color' => 'from-purple-500/10 to-purple-500/5 text-purple-600 dark:text-purple-400 border-purple-500/20', 'route' => route('absensi.index')],
+                    ['label' => 'Total Siswa',   'value' => $totalSiswa, 'icon' => 'users',        'color' => 'text-blue-600 dark:text-blue-400',   'card' => 'stat-card-blue',   'route' => route('siswa.index')],
+                    ['label' => 'Hadir Hari Ini','value' => $hadir,      'icon' => 'check-circle', 'color' => 'text-green-600 dark:text-green-400',  'card' => 'stat-card-green',  'route' => route('absensi.index')],
+                    ['label' => 'Terlambat',     'value' => $terlambat,  'icon' => 'clock',        'color' => 'text-amber-600 dark:text-amber-400',  'card' => 'stat-card-amber',  'route' => route('absensi.index')],
+                    ['label' => 'Izin / Sakit',  'value' => $izinSakit,  'icon' => 'alert-circle', 'color' => 'text-purple-600 dark:text-purple-400', 'card' => 'stat-card-purple', 'route' => route('absensi.index')],
                 ];
             @endphp
             @foreach ($cards as $c)
-                <a href="{{ $c['route'] }}" class="glass-card rounded-2xl p-5 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 border border-slate-200/50 dark:border-slate-800/55 shadow-sm group">
-                    <div class="w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br {{ $c['color'] }} flex items-center justify-center shadow-inner border">
+                <a href="{{ $c['route'] }}" class="{{ $c['card'] }} rounded-2xl p-5 flex items-center gap-4 hover:scale-[1.02] hover:shadow-lg transition-all duration-300 border shadow-sm group">
+                    <div class="w-12 h-12 shrink-0 rounded-xl bg-white/60 dark:bg-black/20 flex items-center justify-center shadow-sm border border-white/80 dark:border-white/5 {{ $c['color'] }}">
                         <x-icon :name="$c['icon']" class="w-6 h-6" />
                     </div>
                     <div>
-                        <div class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{{ $c['label'] }}</div>
-                        <div class="text-3xl font-bold font-outfit text-slate-850 dark:text-slate-50 mt-1">{{ $c['value'] }}</div>
+                        <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ $c['label'] }}</div>
+                        <div class="text-3xl font-bold font-outfit text-slate-800 dark:text-slate-50 mt-1">{{ $c['value'] }}</div>
                     </div>
                 </a>
             @endforeach
@@ -54,8 +54,8 @@
 
         <!-- 7-Day Attendance Trend Chart -->
         <div class="px-4 sm:px-0">
-            <div class="glass-card rounded-2xl shadow-sm p-6 border border-slate-200/50 dark:border-slate-800/55">
-                <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-slate-50 mb-6">Tren Kehadiran 7 Hari Terakhir</h3>
+            <div class="glass-card rounded-2xl shadow-sm p-6 border border-slate-200/50 dark:border-slate-800/55 glass-card-accent">
+                <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-slate-50 mb-6">Tren Kehadiran <span class="text-indigo-600 dark:text-indigo-400">7 Hari</span> Terakhir</h3>
                 @php $maxJumlah = max(1, $tren7Hari->max('jumlah')); @endphp
                 <div class="flex items-end gap-4 h-36 px-2">
                     @foreach ($tren7Hari as $hari)

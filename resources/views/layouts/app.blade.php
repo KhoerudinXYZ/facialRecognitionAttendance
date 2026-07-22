@@ -25,10 +25,11 @@
         </script>
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300 relative overflow-x-hidden">
+        <div class="page-bg min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300 relative overflow-x-hidden">
             <!-- Ambient blurred background glows for admin area -->
-            <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-            <div class="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-500/5 dark:bg-purple-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+            <div class="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/8 dark:bg-indigo-500/14 rounded-full blur-[140px] pointer-events-none -z-10"></div>
+            <div class="absolute top-1/3 right-0 w-[400px] h-[400px] bg-violet-500/6 dark:bg-violet-500/12 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+            <div class="absolute bottom-0 left-0 w-[500px] h-[400px] bg-cyan-500/4 dark:bg-cyan-500/8 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
             @include('layouts.navigation')
 

@@ -16,6 +16,8 @@ export default {
             fontFamily: {
                 sans: ['Inter', ...defaultTheme.fontFamily.sans],
                 outfit: ['Outfit', ...defaultTheme.fontFamily.sans],
+                lexend: ['Lexend', ...defaultTheme.fontFamily.sans],
+                jakarta: ['Plus Jakarta Sans', ...defaultTheme.fontFamily.sans],
             },
         },
     },

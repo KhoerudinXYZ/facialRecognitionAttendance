@@ -3,7 +3,7 @@
 
     @if ($isLibur)
         <div class="flex items-start gap-2.5 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/40 rounded-xl px-4 py-3 text-xs text-yellow-800 dark:text-yellow-300 mb-5">
-            <x-icon name="x-circle" class="w-4 h-4 shrink-0 mt-0.5" />
+            <x-icon name="calendar" class="w-4 h-4 shrink-0 mt-0.5" />
             <div>
                 <span class="font-semibold block mb-0.5">Hari ini Libur</span>
                 Sistem absensi wajah dinonaktifkan sementara.
