@@ -83,6 +83,12 @@
             <path d="M9.8 13.2L18 5m0 0v4m0-4h-4" />
             @break
 
+        @case('lock')
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            <circle cx="12" cy="16" r="1" />
+            @break
+
         @case('search')
             <circle cx="10.5" cy="10.5" r="6.5" />
             <path d="M20 20l-4.35-4.35" />
