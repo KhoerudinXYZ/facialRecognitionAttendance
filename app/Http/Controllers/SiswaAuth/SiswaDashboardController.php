@@ -55,6 +55,11 @@ class SiswaDashboardController extends Controller
             ];
         });
 
-        return view('siswa-auth.dashboard', compact('siswa', 'absenHariIni', 'statistikBulanIni', 'mingguIni', 'isLibur'));
+        $pengaturan = Pengaturan::get();
+        $now = $pengaturan->waktuSekarang();
+        $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
+        $bisaAbsenPulang = $now->greaterThanOrEqualTo($mulaiPulang);
+
+        return view('siswa-auth.dashboard', compact('siswa', 'absenHariIni', 'statistikBulanIni', 'mingguIni', 'isLibur', 'pengaturan', 'bisaAbsenPulang'));
     }
 }

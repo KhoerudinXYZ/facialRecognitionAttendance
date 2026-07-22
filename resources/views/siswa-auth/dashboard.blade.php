@@ -97,7 +97,9 @@
                 $sudahMasuk = (bool) ($absenHariIni->jam_masuk ?? null);
                 $sudahPulang = (bool) ($absenHariIni->jam_pulang ?? null);
                 $absenSelesai = ($sudahMasuk && $sudahPulang) || $izinSakit;
-                $absenNonaktif = $isLibur || $absenSelesai;
+                $menungguJamPulang = $sudahMasuk && ! $sudahPulang && ! ($bisaAbsenPulang ?? false);
+                $absenMasukTutup = ! $sudahMasuk && ($bisaAbsenPulang ?? false);
+                $absenNonaktif = $isLibur || $absenSelesai || $menungguJamPulang || $absenMasukTutup;
             @endphp
             <div class="flex items-center justify-between relative z-10 px-2 sm:px-4">
                 <!-- Step 1: Masuk -->
@@ -133,13 +135,56 @@
 
                 <!-- Signature Camera Kiosk Trigger Button (Center) -->
                 @if ($absenNonaktif)
-                    <div class="flex flex-col items-center shrink-0 -mt-5 z-20" title="{{ $isLibur ? 'Absensi tidak aktif saat hari libur' : ($izinSakit ? 'Kamu tercatat izin/sakit hari ini' : 'Kamu sudah absen masuk & pulang hari ini') }}">
+                    @php
+                        $tooltipText = 'Absensi tidak aktif';
+                        $iconName = 'check-circle';
+                        if ($isLibur) {
+                            $tooltipText = 'Hari ini libur sekolah';
+                            $iconName = 'calendar';
+                        } elseif ($izinSakit) {
+                            $tooltipText = 'Kamu tercatat izin/sakit hari ini';
+                            $iconName = 'alert-circle';
+                        } elseif ($absenSelesai) {
+                            $tooltipText = 'Kamu sudah absen masuk & pulang hari ini';
+                            $iconName = 'check-circle';
+                        } elseif ($menungguJamPulang) {
+                            $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5);
+                            $tooltipText = "Sudah absen masuk. Kamera absen pulang terbuka pukul {$jamPulang}";
+                            $iconName = 'lock';
+                        } elseif ($absenMasukTutup) {
+                            $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5);
+                            $tooltipText = "Jam absen masuk telah ditutup (mulai {$jamPulang})";
+                            $iconName = 'clock';
+                        }
+                    @endphp
+                    <div class="flex flex-col items-center shrink-0 -mt-5 group relative z-20" title="{{ $tooltipText }}">
                         <div @class([
-                                'w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] flex items-center justify-center shadow-xl border-2 backdrop-blur-md',
-                                'bg-white/50 text-slate-400 border-white/60 dark:bg-slate-800/50 dark:text-slate-500 dark:border-slate-700/50' => $isLibur || $izinSakit,
-                                'bg-emerald-50/80 text-emerald-500 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' => !$isLibur && !$izinSakit,
+                                'w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] flex flex-col items-center justify-center shadow-xl border-2 backdrop-blur-md transition-all duration-300',
+                                'bg-white/50 text-slate-400 border-white/60 dark:bg-slate-800/50 dark:text-slate-500 dark:border-slate-700/50' => $isLibur || $izinSakit || $absenMasukTutup,
+                                'bg-amber-500/10 text-amber-600 border-amber-300/50 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30' => $menungguJamPulang,
+                                'bg-emerald-50/80 text-emerald-500 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' => $absenSelesai && !$isLibur && !$izinSakit,
                             ])>
-                            <x-icon :name="$isLibur ? 'calendar' : ($izinSakit ? 'alert-circle' : 'check-circle')" class="w-10 h-10 stroke-[2]" />
+                            <x-icon :name="$iconName" class="w-8 h-8 sm:w-10 sm:h-10 stroke-[2.5]" />
+                        </div>
+                        <div class="absolute -bottom-8 whitespace-nowrap">
+                            <span @class([
+                                    'text-[10px] sm:text-xs font-black uppercase tracking-widest font-lexend',
+                                    'text-amber-600 dark:text-amber-400' => $menungguJamPulang,
+                                    'text-slate-400 dark:text-slate-500' => $isLibur || $izinSakit || $absenMasukTutup,
+                                    'text-emerald-600 dark:text-emerald-400' => $absenSelesai && !$isLibur && !$izinSakit,
+                                ])>
+                                @if($menungguJamPulang)
+                                    Terkunci (Jam {{ \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5) }})
+                                @elseif($absenMasukTutup)
+                                    Masuk Ditutup
+                                @elseif($absenSelesai)
+                                    Absen Selesai
+                                @elseif($isLibur)
+                                    Hari Libur
+                                @else
+                                    Nonaktif
+                                @endif
+                            </span>
                         </div>
                     </div>
                 @else

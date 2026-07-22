@@ -46,10 +46,17 @@ class SiswaAbsensiController extends Controller
             return redirect()->route('siswa.dashboard')->with('info', "Kamu tercatat {$absenHariIni->status} hari ini, absen tidak perlu dilakukan.");
         }
 
+        $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
+
+        // Jika siswa sudah absen masuk (dan belum absen pulang), kamera baru terbuka saat jam pulang
+        if ($absenHariIni && $absenHariIni->jam_masuk && ! $absenHariIni->jam_pulang && $now->lessThan($mulaiPulang)) {
+            $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0, 5);
+            return redirect()->route('siswa.dashboard')->with('info', "Kamu sudah absen masuk hari ini. Kamera untuk absen pulang baru terbuka pukul {$jamPulang}.");
+        }
+
         // Sama seperti gate di AbsensiRecorder: siswa yang belum absen masuk
         // sama sekali (atau masih alpha) tidak perlu buka kamera segala kalau
         // jam absen masuk sudah ditutup — tidak ada yang bisa dicatat.
-        $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
         if ((! $absenHariIni || $absenHariIni->status === 'alpha') && $now->greaterThanOrEqualTo($mulaiPulang)) {
             return redirect()->route('siswa.dashboard')->with('info', "Jam absen masuk sudah ditutup untuk hari ini (mulai {$pengaturan->mulai_pulang}).");
         }
