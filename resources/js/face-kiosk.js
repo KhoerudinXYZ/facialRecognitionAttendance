@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('kiosk-overlay');
     const statusEl = document.getElementById('kiosk-status');
     const toastEl = document.getElementById('kiosk-toast');
+    const switchCameraBtn = document.getElementById('switch-camera-btn');
     const ringIdle = document.getElementById('kiosk-ring-idle');
     const ringScanning = document.getElementById('kiosk-ring-scanning');
     const successEl = document.getElementById('kiosk-success');
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
     const labeled = JSON.parse(root.dataset.labeled || '[]');
     const lokasiAktif = root.dataset.lokasiAktif === '1';
+    const kameraTerkunci = root.dataset.kameraTerkunci === '1';
 
     // Peta id -> nama untuk menampilkan label
     const namaMap = {};
@@ -29,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const blinkTracker = new BlinkTracker();
     let recording = false;
     let redirecting = false;
+    let cameraStream = null;
+    let currentFacingMode = 'user';
 
     // currentPosition di-cache sekali per sesi halaman (bukan watchPosition)
     // supaya tidak terus-menerus minta lokasi device selama kamera aktif.
@@ -226,9 +230,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (kameraTerkunci || !video) {
+                setStatus('Kamera terkunci. Harap tunggu waktu yang ditentukan.');
+                return;
+            }
+
             setStatus('Menyalakan kamera…');
             requestLocation();
-            await startCamera(video);
+            cameraStream = await startCamera(video, currentFacingMode);
+            
+            if (switchCameraBtn) {
+                switchCameraBtn.addEventListener('click', async () => {
+                    switchCameraBtn.classList.add('opacity-50', 'pointer-events-none');
+                    if (cameraStream) {
+                        cameraStream.getTracks().forEach((t) => t.stop());
+                    }
+                    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+                    try {
+                        cameraStream = await startCamera(video, currentFacingMode);
+                    } catch (e) {
+                        console.error('Gagal mengganti kamera:', e);
+                        showToast('Gagal mengganti kamera', false);
+                    }
+                    switchCameraBtn.classList.remove('opacity-50', 'pointer-events-none');
+                });
+            }
+
             setStatus('Kamera aktif. Arahkan wajah ke kamera untuk absen otomatis.');
             requestAnimationFrame(loop);
         } catch (e) {

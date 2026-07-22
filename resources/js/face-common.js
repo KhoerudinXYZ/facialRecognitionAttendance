@@ -24,9 +24,9 @@ export function detectorOptions() {
 /**
  * Nyalakan webcam dan sambungkan ke elemen <video>.
  */
-export async function startCamera(videoEl) {
+export async function startCamera(videoEl, facingMode = 'user') {
     const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
+        video: { facingMode: facingMode, width: 640, height: 480 },
         audio: false,
     });
     videoEl.srcObject = stream;

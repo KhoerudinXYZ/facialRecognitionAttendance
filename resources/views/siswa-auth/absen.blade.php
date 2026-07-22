@@ -4,7 +4,8 @@
          data-store-url="{{ route('siswa.absen.store') }}"
          data-dashboard-url="{{ route('siswa.dashboard') }}"
          data-labeled='@json($labeledDescriptors)'
-         data-lokasi-aktif="{{ $pengaturan->lokasiAktif() ? '1' : '0' }}">
+         data-lokasi-aktif="{{ $pengaturan->lokasiAktif() ? '1' : '0' }}"
+         data-kamera-terkunci="{{ $kameraTerkunci ? '1' : '0' }}">
          
         <!-- Massive Watermark Text Background -->
         <div class="absolute -left-4 top-10 text-[140px] font-black text-indigo-900/[0.03] dark:text-indigo-100/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none transition-transform duration-700 group-hover:scale-105">
@@ -35,15 +36,33 @@
 
             <!-- Video Container -->
             <div class="absolute inset-3 rounded-3xl overflow-hidden bg-slate-950 shadow-2xl group border border-slate-700/50">
-                <video id="kiosk-video" autoplay muted playsinline class="w-full h-full object-cover scale-x-[-1] filter contrast-125 saturate-110"></video>
-                <canvas id="kiosk-overlay" class="absolute inset-0 w-full h-full"></canvas>
-                
-                <!-- Laser line scanner overlay -->
-                <div class="laser-line-indigo opacity-80 mix-blend-screen shadow-[0_0_15px_rgba(99,102,241,1)]"></div>
+                @if($kameraTerkunci)
+                    <!-- Locked State Overlay -->
+                    <div class="absolute inset-0 z-40 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+                        <div class="w-20 h-20 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center shadow-2xl mb-4">
+                            <x-icon name="lock" class="w-10 h-10 text-slate-400 stroke-[2]" />
+                        </div>
+                        <span class="text-sm font-black font-lexend text-white mb-2 tracking-wide">Kamera Terkunci</span>
+                        <p class="text-[11px] font-jakarta text-slate-400 leading-relaxed max-w-[200px]">
+                            {{ $pesanTerkunci }}
+                        </p>
+                    </div>
+                @else
+                    <video id="kiosk-video" autoplay muted playsinline class="w-full h-full object-cover scale-x-[-1] filter contrast-125 saturate-110"></video>
+                    <canvas id="kiosk-overlay" class="absolute inset-0 w-full h-full"></canvas>
+                    
+                    <!-- Laser line scanner overlay -->
+                    <div class="laser-line-indigo opacity-80 mix-blend-screen shadow-[0_0_15px_rgba(99,102,241,1)]"></div>
+                    
+                    <!-- Switch Camera Button -->
+                    <button id="switch-camera-btn" type="button" class="absolute top-4 right-4 z-50 w-10 h-10 rounded-xl bg-slate-900/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-slate-900/80 transition-all shadow-lg active:scale-95" title="Ganti Kamera">
+                        <x-icon name="refresh-cw" class="w-5 h-5 stroke-[2]" />
+                    </button>
+                @endif
             </div>
 
             <!-- Success Overlay -->
-            <div id="kiosk-success" class="absolute inset-3 rounded-3xl bg-emerald-500/90 backdrop-blur-md hidden items-center justify-center scale-0 transition-transform duration-500 z-30">
+            <div id="kiosk-success" class="absolute inset-3 rounded-3xl bg-emerald-500/90 backdrop-blur-md hidden items-center justify-center scale-0 transition-transform duration-500 z-50">
                 <div class="w-20 h-20 rounded-2xl bg-white flex items-center justify-center shadow-2xl animate-bounce">
                     <x-icon name="check" class="w-12 h-12 text-emerald-500 stroke-[3]" />
                 </div>
@@ -52,9 +71,15 @@
 
         <!-- Status Message -->
         <div class="space-y-2 relative z-10 px-4">
-            <p id="kiosk-status" class="text-sm font-black font-lexend text-indigo-700 dark:text-indigo-300 text-center min-h-[3rem] bg-indigo-50/80 dark:bg-indigo-900/40 py-3 px-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 shadow-inner backdrop-blur-sm transition-all duration-300">
-                Menyiapkan kamera pemindai…
-            </p>
+            @if($kameraTerkunci)
+                <p class="text-sm font-black font-lexend text-slate-700 dark:text-slate-300 text-center min-h-[3rem] bg-slate-100/80 dark:bg-slate-800/40 py-3 px-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-inner backdrop-blur-sm transition-all duration-300">
+                    Akses Kamera Dinonaktifkan
+                </p>
+            @else
+                <p id="kiosk-status" class="text-sm font-black font-lexend text-indigo-700 dark:text-indigo-300 text-center min-h-[3rem] bg-indigo-50/80 dark:bg-indigo-900/40 py-3 px-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 shadow-inner backdrop-blur-sm transition-all duration-300">
+                    Menyiapkan kamera pemindai…
+                </p>
+            @endif
         </div>
 
         @if ($siswa->faceDescriptors->isEmpty())
