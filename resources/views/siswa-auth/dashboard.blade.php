@@ -80,6 +80,14 @@
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest border shadow-sm {{ $badgeClass }}">
                         Status: {{ $absenHariIni->status }}
                     </span>
+                @else
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black font-lexend bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20 uppercase tracking-widest shadow-sm">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                        </span>
+                        Belum Absen
+                    </span>
                 @endif
             </div>
 
