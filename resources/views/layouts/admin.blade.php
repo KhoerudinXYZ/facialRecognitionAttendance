@@ -24,15 +24,15 @@
     <body class="font-sans antialiased">
         <div class="page-bg min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300 relative overflow-x-hidden">
             <!-- Ambient blurred background glows for admin area -->
-            <div class="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/8 dark:bg-indigo-500/14 rounded-full blur-[140px] pointer-events-none -z-10"></div>
-            <div class="absolute top-1/3 right-0 w-[400px] h-[400px] bg-violet-500/6 dark:bg-violet-500/12 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-            <div class="absolute bottom-0 left-0 w-[500px] h-[400px] bg-cyan-500/4 dark:bg-cyan-500/8 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+            <div class="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-400/15 dark:bg-indigo-500/14 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+            <div class="absolute top-1/3 right-0 w-[400px] h-[400px] bg-violet-400/12 dark:bg-violet-500/12 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+            <div class="absolute bottom-0 left-0 w-[500px] h-[400px] bg-cyan-400/10 dark:bg-cyan-500/8 rounded-full blur-[100px] pointer-events-none -z-10"></div>
 
             @include('layouts.navigation')
 
             <!-- Page Heading -->
             @isset($header)
-                <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50">
+                <header class="bg-white/40 dark:bg-slate-900/80 backdrop-blur-xl backdrop-saturate-150 border-b border-indigo-100/50 dark:border-slate-800/50 shadow-[0_1px_3px_rgba(99,102,241,0.03)]">
                     <div class="max-w-7xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>

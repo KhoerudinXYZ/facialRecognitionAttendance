@@ -26,10 +26,10 @@
 
         <div class="page-bg min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300 relative">
             <!-- Ambient orbs -->
-            <div class="absolute top-0 right-0 w-[350px] h-[350px] bg-indigo-500/7 dark:bg-indigo-500/12 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-            <div class="absolute bottom-1/4 left-0 w-[280px] h-[280px] bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+            <div class="absolute top-0 right-0 w-[350px] h-[350px] bg-indigo-400/15 dark:bg-indigo-500/12 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+            <div class="absolute bottom-1/4 left-0 w-[280px] h-[280px] bg-violet-400/12 dark:bg-violet-500/10 rounded-full blur-[80px] pointer-events-none -z-10"></div>
             <!-- Header (Sticky & Glassmorphism) -->
-            <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+            <header class="sticky top-0 z-40 bg-white/40 dark:bg-slate-900/80 backdrop-blur-xl backdrop-saturate-150 border-b border-indigo-100/60 dark:border-slate-800/50 shadow-[0_1px_3px_rgba(99,102,241,0.04)]">
                 <div class="max-w-lg mx-auto px-4 py-3 flex justify-between items-center">
                     <a href="{{ route('siswa.profile.edit') }}" class="flex items-center gap-3">
                         @if ($siswaUser->foto)
@@ -74,7 +74,7 @@
             </main>
 
             <!-- Bottom Navigation Bar (Glassmorphism & Floating look) -->
-            <nav class="fixed inset-x-0 bottom-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-800/80 z-40 shadow-2xl rounded-t-3xl">
+            <nav class="fixed inset-x-0 bottom-0 bg-white/75 dark:bg-slate-900/90 backdrop-blur-xl backdrop-saturate-150 border-t border-indigo-100/60 dark:border-slate-800/80 z-40 shadow-[0_-10px_40px_rgba(99,102,241,0.08)] rounded-t-3xl">
                 <div class="max-w-lg mx-auto grid grid-cols-5 py-2 px-2">
                     @php
                         $todayNav = \App\Models\Pengaturan::sekarang()->startOfDay();

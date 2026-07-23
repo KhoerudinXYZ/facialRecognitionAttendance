@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 sticky top-0 z-40 transition-colors duration-300">
+<nav x-data="{ open: false }" class="bg-white/50 dark:bg-slate-900/80 backdrop-blur-xl backdrop-saturate-150 border-b border-indigo-100/60 dark:border-slate-800/50 sticky top-0 z-40 transition-colors duration-300 shadow-[0_1px_3px_rgba(99,102,241,0.04)]">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
