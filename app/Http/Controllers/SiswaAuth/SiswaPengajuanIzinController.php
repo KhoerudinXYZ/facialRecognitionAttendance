@@ -26,11 +26,13 @@ class SiswaPengajuanIzinController extends Controller
         $siswa = Auth::guard('siswa')->user();
 
         $today = Pengaturan::sekarang()->startOfDay();
-        $pengajuanHariIni = $siswa->pengajuanIzin()->whereDate('tanggal', $today)->first();
+        $pengajuanHariIni = $siswa->pengajuanIzin()->whereDate('tanggal', $today)->whereIn('jenis', ['izin', 'sakit'])->first();
+        $izinPulangCepat  = $siswa->pengajuanIzin()->whereDate('tanggal', $today)->where('jenis', 'pulang_cepat')->first();
 
         return view('siswa-auth.izin', [
-            'siswa' => $siswa,
+            'siswa'           => $siswa,
             'pengajuanHariIni' => $pengajuanHariIni,
+            'izinPulangCepat'  => $izinPulangCepat,
         ]);
     }
 
@@ -40,9 +42,9 @@ class SiswaPengajuanIzinController extends Controller
         $siswa = Auth::guard('siswa')->user();
 
         $validated = $request->validate([
-            'jenis' => ['required', 'in:izin,sakit'],
-            'keterangan' => ['required', 'string', 'max:255'],
-            'bukti' => ['required', 'image', 'max:2048'],
+            'jenis'       => ['required', 'in:izin,sakit,pulang_cepat'],
+            'keterangan'  => ['required', 'string', 'max:255'],
+            'bukti'       => ['required', 'image', 'max:2048'],
         ]);
 
         $today = Pengaturan::sekarang()->startOfDay();
@@ -55,13 +57,28 @@ class SiswaPengajuanIzinController extends Controller
         // baris 'alpha' (mis. ditulis PengajuanIzinController::reject() saat
         // pengajuan sebelumnya ditolak) tidak boleh ikut memblokir, supaya
         // siswa masih bisa ajukan izin/sakit yang baru untuk hari yang sama.
-        if ($siswa->absensi()->whereDate('tanggal', $today)->whereIn('status', ['hadir', 'terlambat'])->exists()) {
-            return back()->with('error', 'Kamu sudah tercatat hadir hari ini.');
+        $absenHariIni = $siswa->absensi()->whereDate('tanggal', $today)->first();
+
+        if ($validated['jenis'] === 'pulang_cepat') {
+            // Pulang cepat hanya bisa diajukan oleh siswa yang SUDAH absen masuk
+            if (! $absenHariIni || ! in_array($absenHariIni->status, ['hadir', 'terlambat'], true)) {
+                return back()->with('error', 'Izin pulang cepat hanya bisa diajukan setelah absen masuk.');
+            }
+            // Kalau sudah absen pulang, tidak perlu izin lagi
+            if ($absenHariIni->jam_pulang) {
+                return back()->with('error', 'Kamu sudah tercatat absen pulang hari ini.');
+            }
+        } else {
+            // izin/sakit: siswa yang sudah hadir tidak bisa mengajukan tidak masuk
+            if ($absenHariIni && in_array($absenHariIni->status, ['hadir', 'terlambat'], true)) {
+                return back()->with('error', 'Kamu sudah tercatat hadir hari ini.');
+            }
         }
 
-        $pengajuanHariIni = $siswa->pengajuanIzin()->whereDate('tanggal', $today)->first();
+        $pengajuanHariIni = $siswa->pengajuanIzin()->whereDate('tanggal', $today)->where('jenis', $validated['jenis'])->first();
         if ($pengajuanHariIni && in_array($pengajuanHariIni->status, ['menunggu', 'disetujui'], true)) {
-            return back()->with('error', 'Kamu sudah punya pengajuan izin/sakit untuk hari ini.');
+            $label = $validated['jenis'] === 'pulang_cepat' ? 'izin pulang cepat' : 'izin/sakit';
+            return back()->with('error', "Kamu sudah punya pengajuan {$label} untuk hari ini.");
         }
 
         if ($pengajuanHariIni) {
@@ -99,7 +116,8 @@ class SiswaPengajuanIzinController extends Controller
 
         $this->notifikasiWaliKelas($siswa, $validated['jenis'], $validated['keterangan'], $today);
 
-        return redirect()->route('siswa.izin')->with('success', 'Pengajuan izin/sakit berhasil dikirim, menunggu persetujuan.');
+        $label = $validated['jenis'] === 'pulang_cepat' ? 'izin pulang cepat' : 'izin/sakit';
+        return redirect()->route('siswa.izin')->with('success', "Pengajuan {$label} berhasil dikirim, menunggu persetujuan.");
     }
 
     /**

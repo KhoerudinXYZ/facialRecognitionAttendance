@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SiswaAuth;
 use App\Http\Controllers\Controller;
 use App\Models\HariLibur;
 use App\Models\Pengaturan;
+use App\Models\PengajuanIzin;
 use App\Models\Siswa;
 use App\Services\AbsensiRecorder;
 use Illuminate\Http\JsonResponse;
@@ -48,14 +49,32 @@ class SiswaAbsensiController extends Controller
 
         $kameraTerkunci = false;
         $pesanTerkunci = '';
-        
+
         $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
 
+        // Cek apakah siswa punya izin pulang cepat yang sudah disetujui hari ini
+        $izinPulangCepat = PengajuanIzin::where('siswa_id', $siswa->id)
+            ->whereDate('tanggal', $today)
+            ->where('jenis', 'pulang_cepat')
+            ->first();
+
+        $izinPulangCepatDisetujui = $izinPulangCepat && $izinPulangCepat->status === 'disetujui';
+
         // Jika siswa sudah absen masuk (dan belum absen pulang), kamera baru terbuka saat jam pulang
+        // KECUALI jika ada izin pulang cepat yang sudah disetujui
         if ($absenHariIni && $absenHariIni->jam_masuk && ! $absenHariIni->jam_pulang && $now->lessThan($mulaiPulang)) {
-            $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0, 5);
-            $kameraTerkunci = true;
-            $pesanTerkunci = "Sudah absen masuk. Kamera untuk absen pulang baru terbuka pukul {$jamPulang}.";
+            if ($izinPulangCepatDisetujui) {
+                // Kamera terbuka khusus untuk absen pulang cepat
+                $kameraTerkunci = false;
+            } else {
+                $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0, 5);
+                $kameraTerkunci = true;
+                if ($izinPulangCepat && $izinPulangCepat->status === 'menunggu') {
+                    $pesanTerkunci = "Pengajuan izin pulang cepat kamu sedang menunggu persetujuan wali kelas.";
+                } else {
+                    $pesanTerkunci = "Sudah absen masuk. Kamera untuk absen pulang baru terbuka pukul {$jamPulang}.";
+                }
+            }
         }
 
         // Sama seperti gate di AbsensiRecorder: siswa yang belum absen masuk
@@ -69,17 +88,19 @@ class SiswaAbsensiController extends Controller
         $siswa->load('faceDescriptors');
 
         $labeledDescriptors = [[
-            'siswa_id' => $siswa->id,
-            'label' => $siswa->nama,
+            'siswa_id'    => $siswa->id,
+            'label'       => $siswa->nama,
             'descriptors' => $siswa->faceDescriptors->pluck('descriptor')->all(),
         ]];
 
         return view('siswa-auth.absen', [
-            'siswa' => $siswa,
-            'labeledDescriptors' => $labeledDescriptors,
-            'pengaturan' => $pengaturan,
-            'kameraTerkunci' => $kameraTerkunci,
-            'pesanTerkunci' => $pesanTerkunci,
+            'siswa'                  => $siswa,
+            'labeledDescriptors'     => $labeledDescriptors,
+            'pengaturan'             => $pengaturan,
+            'kameraTerkunci'         => $kameraTerkunci,
+            'pesanTerkunci'          => $pesanTerkunci,
+            'izinPulangCepat'        => $izinPulangCepat ?? null,
+            'izinPulangCepatDisetujui' => $izinPulangCepatDisetujui ?? false,
         ]);
     }
 

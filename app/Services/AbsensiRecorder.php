@@ -7,6 +7,7 @@ use App\Models\Absensi;
 use App\Models\HariLibur;
 use App\Models\NotifikasiAbsensiLog;
 use App\Models\Pengaturan;
+use App\Models\PengajuanIzin;
 use App\Models\Siswa;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
@@ -133,11 +134,21 @@ class AbsensiRecorder
             $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
 
             if ($now->lessThan($mulaiPulang)) {
-                return [
-                    'status' => 'already',
-                    'message' => "{$siswa->nama} sudah absen masuk hari ini. Absen pulang dibuka mulai {$pengaturan->mulai_pulang}.",
-                    'nama' => $siswa->nama,
-                ];
+                // Cek izin pulang cepat yang sudah disetujui
+                $izinPulangCepat = PengajuanIzin::where('siswa_id', $siswa->id)
+                    ->whereDate('tanggal', $today)
+                    ->where('jenis', 'pulang_cepat')
+                    ->where('status', 'disetujui')
+                    ->exists();
+
+                if (! $izinPulangCepat) {
+                    return [
+                        'status'  => 'already',
+                        'message' => "{$siswa->nama} sudah absen masuk hari ini. Absen pulang dibuka mulai {$pengaturan->mulai_pulang}.",
+                        'nama'    => $siswa->nama,
+                    ];
+                }
+                // Izin disetujui — lanjutkan ke pencatatan jam_pulang
             }
 
             if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng)) {

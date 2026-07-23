@@ -14,9 +14,19 @@
 
     @php
         $badgeMap = [
-            'menunggu' => 'bg-amber-500 text-white shadow-amber-500/30',
+            'menunggu'  => 'bg-amber-500 text-white shadow-amber-500/30',
             'disetujui' => 'bg-emerald-500 text-white shadow-emerald-500/30',
-            'ditolak' => 'bg-rose-500 text-white shadow-rose-500/30',
+            'ditolak'   => 'bg-rose-500 text-white shadow-rose-500/30',
+        ];
+        $jenisLabelMap = [
+            'izin'         => '📋 Izin',
+            'sakit'        => '🏥 Sakit',
+            'pulang_cepat' => '🚪 Pulang Cepat',
+        ];
+        $jenisBadgeMap = [
+            'izin'         => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/50',
+            'sakit'        => 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-800/50',
+            'pulang_cepat' => 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-300/50 dark:border-orange-800/50',
         ];
     @endphp
 
@@ -86,7 +96,9 @@
                     <div class="flex flex-wrap items-center gap-4 lg:gap-6">
                         <div class="flex flex-col">
                             <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest font-jakarta">Jenis</span>
-                            <span class="font-lexend font-black text-sm text-slate-800 dark:text-slate-200 mt-0.5">{{ ucfirst($p->jenis) }}</span>
+                            <span class="inline-flex items-center gap-1.5 mt-1 px-3 py-1 rounded-lg font-lexend font-black text-[10px] uppercase tracking-wider {{ $jenisBadgeMap[$p->jenis] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }}">
+                                {{ $jenisLabelMap[$p->jenis] ?? ucfirst($p->jenis) }}
+                            </span>
                         </div>
                         <div class="flex flex-col max-w-xs">
                             <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest font-jakarta">Keterangan</span>
@@ -106,7 +118,7 @@
                         @if ($p->status === 'menunggu')
                             <x-confirm-form :action="route('pengajuan-izin.approve', $p)" method="POST"
                                              title="Setujui pengajuan {{ $p->siswa->nama }}?"
-                                             message="Absensi tanggal {{ $p->tanggal->format('d/m/Y') }} akan dicatat sebagai {{ $p->jenis }}. Pengajuan yang sudah disetujui tidak bisa ditinjau ulang."
+                                             message="{{ $p->jenis === 'pulang_cepat' ? 'Siswa akan diizinkan melakukan absen pulang sebelum jam resmi. Status hadir tidak berubah.' : 'Absensi tanggal '.$p->tanggal->format('d/m/Y').' akan dicatat sebagai '.$p->jenis.'. Pengajuan yang sudah disetujui tidak bisa ditinjau ulang.' }}"
                                              confirm-label="Setujui" :danger="false"
                                              trigger-class="inline-flex justify-center items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black font-lexend text-[10px] uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all duration-300 transform active:scale-95"><x-icon name="check-circle" class="w-4 h-4 stroke-[2.5]" /> Approve</x-confirm-form>
                             <x-confirm-form :action="route('pengajuan-izin.reject', $p)" method="POST"

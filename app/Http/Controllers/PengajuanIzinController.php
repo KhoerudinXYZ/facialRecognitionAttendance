@@ -98,6 +98,15 @@ class PengajuanIzinController extends Controller
      */
     private function tulisAbsensiDisetujui(PengajuanIzin $pengajuanIzin, bool $percobaanKedua = false): void
     {
+        // Izin Pulang Cepat: tidak mengubah status/jam hadir siswa — hanya
+        // menandai bahwa siswa diperbolehkan scan wajah untuk pulang sebelum
+        // jam resmi. Baris absensi yang ada dibiarkan apa adanya; kamera
+        // akan membuka kunci saat SiswaAbsensiController melihat pengajuan
+        // ini sudah berstatus 'disetujui'.
+        if ($pengajuanIzin->jenis === 'pulang_cepat') {
+            return;
+        }
+
         $absensi = Absensi::where('siswa_id', $pengajuanIzin->siswa_id)
             ->whereDate('tanggal', $pengajuanIzin->tanggal)
             ->first();
@@ -109,16 +118,16 @@ class PengajuanIzinController extends Controller
             $absensi = new Absensi([
                 'siswa_id' => $pengajuanIzin->siswa_id,
                 'kelas_id' => $pengajuanIzin->siswa->kelas_id,
-                'tanggal' => $pengajuanIzin->tanggal,
+                'tanggal'  => $pengajuanIzin->tanggal,
             ]);
         }
 
-        $absensi->status = $pengajuanIzin->jenis;
-        $absensi->metode = 'manual';
+        $absensi->status    = $pengajuanIzin->jenis;
+        $absensi->metode    = 'manual';
         $absensi->keterangan = $pengajuanIzin->keterangan;
         // Baris izin/sakit tidak boleh menyisakan jam kehadiran dari status
         // lama (lihat komentar di atas soal absen wajah sebelum disetujui).
-        $absensi->jam_masuk = null;
+        $absensi->jam_masuk  = null;
         $absensi->jam_pulang = null;
 
         try {
