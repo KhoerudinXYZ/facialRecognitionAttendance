@@ -25,10 +25,11 @@
         </script>
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden transition-colors duration-300">
+        <div class="page-bg min-h-screen text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden transition-colors duration-300">
             <!-- Glow background circles -->
-            <div class="absolute w-96 h-96 rounded-full bg-indigo-600/10 dark:bg-indigo-600/5 blur-[120px] -top-20 -left-20"></div>
-            <div class="absolute w-96 h-96 rounded-full bg-purple-600/10 dark:bg-purple-600/5 blur-[120px] -bottom-20 -right-20"></div>
+            <div class="absolute w-[500px] h-[500px] rounded-full bg-indigo-400/30 dark:bg-indigo-500/12 blur-[120px] -top-32 -left-32 pointer-events-none"></div>
+            <div class="absolute w-[400px] h-[400px] rounded-full bg-violet-400/25 dark:bg-violet-500/10 blur-[100px] -bottom-32 -right-32 pointer-events-none"></div>
+            <div class="absolute w-[300px] h-[300px] rounded-full bg-blue-300/30 dark:bg-blue-500/5 blur-[90px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none -z-10"></div>
 
             <button id="theme-toggle" type="button"
                     class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-900 transition"
@@ -42,7 +43,7 @@
             </a>
             <p class="font-outfit text-slate-800 dark:text-slate-200 font-semibold mb-6 text-lg tracking-wide">{{ config('app.name', 'Laravel') }}</p>
 
-            <div class="w-full max-w-sm glass-card rounded-2xl shadow-xl p-7 relative z-10 transition-all duration-300 hover:shadow-2xl">
+            <div class="w-full max-w-sm bento-card rounded-2xl shadow-xl p-7 relative z-10 transition-all duration-300">
                 {{ $slot }}
             </div>
 
