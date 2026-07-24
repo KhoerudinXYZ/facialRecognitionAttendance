@@ -17,6 +17,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const ringScanning = document.getElementById('kiosk-ring-scanning');
     const successEl = document.getElementById('kiosk-success');
 
+    // Panel diagnostik on-screen, aktif hanya lewat ?debug=1 di URL --
+    // supaya siswa yang absen normal tidak lihat teks debug ini, tapi kita
+    // bisa baca backend tfjs & durasi inference langsung dari layar HP
+    // tanpa perlu USB debugging/remote inspect.
+    const debugMode = new URLSearchParams(window.location.search).get('debug') === '1';
+    let debugEl = null;
+    if (debugMode) {
+        debugEl = document.createElement('div');
+        debugEl.style.cssText =
+            'position:fixed;left:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,0.75);' +
+            'color:#0f0;font:11px monospace;padding:6px 8px;border-radius:6px;white-space:pre;pointer-events:none;';
+        debugEl.textContent = 'debug: menyiapkan…';
+        document.body.appendChild(debugEl);
+    }
+
     const storeUrl = root.dataset.storeUrl;
     const dashboardUrl = root.dataset.dashboardUrl;
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
@@ -174,6 +189,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const SIMPLE_DETECT_INTERVAL_MS = 100; // ~box overlay refresh rate, jauh di bawah kecepatan RAF (60fps+)
+    // Diturunkan dari 250ms setelah pindah ke backend wasm (~170ms/deteksi
+    // di HP paling lambat yang dites, <100ms di laptop) -- sampling lebih
+    // rapat = makin besar peluang menangkap frame tepat saat mata tertutup
+    // (kedipan asli cuma ~100-400ms). "await" di bawah tetap jadi batas
+    // alami kalau device lebih lambat dari nilai ini, jadi aman dinaikkan.
+    const FULL_DETECT_INTERVAL_MS = 120;
+
+    // Wajah harus mengisi minimal ~22% lebar frame kamera supaya area mata
+    // cukup detail untuk EAR yang reliable -- lihat komentar di bawah pada
+    // pemakaiannya.
+    const MIN_FACE_WIDTH_RATIO = 0.22;
+
+    let lastSimpleTime = 0;
+    let lastRecognitionTime = 0;
+    let cachedSimpleDetections = [];
+    let cachedDetectionsWithDescriptors = [];
+
+    // Diagnostik durasi inference (deteksi berat), di-log paling sering
+    // sekali per detik supaya console tidak banjir -- dipakai untuk cek
+    // apakah device tertentu (mis. HP) memang lambat secara inheren di
+    // tiap forward pass, bukan cuma soal frekuensi loop.
+    let lastTimingLog = 0;
+    function logDetectTiming(ms) {
+        const now = Date.now();
+        if (now - lastTimingLog < 1000) return;
+        lastTimingLog = now;
+        const msg = `deteksi penuh: ${ms.toFixed(0)}ms`;
+        console.info('[face-api] ' + msg);
+        if (debugEl) {
+            debugEl.textContent = `backend: ${faceapi.tf.getBackend()}\n${msg}`;
+        }
+    }
+
     async function loop() {
         if (redirecting) return;
 
@@ -181,36 +230,110 @@ document.addEventListener('DOMContentLoaded', () => {
             return requestAnimationFrame(loop);
         }
 
-        const detections = await faceapi
-            .detectAllFaces(video, detectorOptions())
-            .withFaceLandmarks()
-            .withFaceDescriptors();
-
+        const now = Date.now();
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         const dims = faceapi.matchDimensions(canvas, video, true);
-        const resized = faceapi.resizeResults(detections, dims);
 
-        for (const det of resized) {
-            const best = faceMatcher.findBestMatch(det.descriptor);
-            const box = det.detection.box;
-            const isMatch = best.label !== 'unknown';
-            const nama = isMatch ? (namaMap[best.label] || 'Dikenali') : 'Tidak dikenal';
+        // Sebelumnya deteksi ringan berjalan di SETIAP tick RAF (bisa 60x/detik)
+        // tanpa throttle, dan saat deteksi berat jalan, itu memicu forward pass
+        // TinyFaceDetector KEDUA di frame yang sama (deteksi ringan + berat
+        // dobel). Di CPU/GPU HP yang lemah ini bikin main thread selalu sibuk
+        // menjalankan inference tanpa jeda -- kamera & deteksi jadi lag berat.
+        // Sekarang: hanya SATU forward pass per siklus, masing-masing
+        // digerbang oleh interval waktunya sendiri; tick di antaranya cukup
+        // gambar ulang hasil cache tanpa inference baru.
+        //
+        // Deteksi berat (landmark+descriptor) juga cuma boleh jalan kalau
+        // deteksi ringan terakhir memang menemukan wajah -- sebelumnya ini
+        // jalan tiap 250ms TANPA SYARAT, jadi tetap membebani GPU walau
+        // kamera kosong (tidak ada orang di depannya).
+        const hasRecentFace = cachedSimpleDetections.length > 0;
+        if (hasRecentFace && now - lastRecognitionTime > FULL_DETECT_INTERVAL_MS) {
+            lastRecognitionTime = now;
+            lastSimpleTime = now;
+            const t0 = performance.now();
+            cachedDetectionsWithDescriptors = await faceapi
+                .detectAllFaces(video, detectorOptions())
+                .withFaceLandmarks()
+                .withFaceDescriptors();
+            logDetectTiming(performance.now() - t0);
+            cachedSimpleDetections = cachedDetectionsWithDescriptors.map((d) => d.detection);
+        } else if (now - lastSimpleTime > SIMPLE_DETECT_INTERVAL_MS) {
+            lastSimpleTime = now;
+            cachedSimpleDetections = await faceapi.detectAllFaces(video, detectorOptions());
+        }
 
-            new faceapi.draw.DrawBox(box, {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const resizedSimple = faceapi.resizeResults(cachedSimpleDetections, dims);
+        const resizedFull = faceapi.resizeResults(cachedDetectionsWithDescriptors, dims);
+
+        // 3. Gambar hasil deteksi visual
+        for (const det of resizedSimple) {
+            // Cari descriptor terdekat dari cache deteksi penuh berdasarkan posisi kotak wajah
+            const matchedFullDet = resizedFull.find(fullDet => {
+                const boxA = det.box || det.relativeBox;
+                const boxB = fullDet.detection.box || fullDet.detection.relativeBox;
+                if (!boxA || !boxB) return false;
+                // Hitung irisan kotak (intersection over union) sederhana
+                const dx = Math.abs(boxA.x - boxB.x);
+                const dy = Math.abs(boxA.y - boxB.y);
+                return dx < 50 && dy < 50;
+            });
+
+            let nama = 'Mendeteksi...';
+            let isMatch = false;
+            let best = null;
+
+            if (matchedFullDet) {
+                best = faceMatcher.findBestMatch(matchedFullDet.descriptor);
+                isMatch = best.label !== 'unknown';
+                nama = isMatch ? (namaMap[best.label] || 'Dikenali') : 'Tidak dikenal';
+            }
+
+            // Video di-mirror lewat CSS (scale-x-[-1]) untuk tampilan selfie,
+            // tapi canvas overlay sengaja TIDAK ikut di-mirror lagi -- kalau
+            // canvas ikut di-mirror, label nama yang digambar di atasnya jadi
+            // ikut terbalik (teks mirror, tidak terbaca). Sebagai gantinya,
+            // posisi X kotak dihitung ulang secara manual di sini supaya
+            // kotak tetap pas di wajah pada video yang mirror, sementara
+            // teks labelnya tetap digambar normal (tidak terbalik).
+            const box = det.box || det;
+            const mirroredBox = {
+                x: dims.width - box.x - box.width,
+                y: box.y,
+                width: box.width,
+                height: box.height,
+            };
+
+            new faceapi.draw.DrawBox(mirroredBox, {
                 label: nama,
-                boxColor: isMatch ? '#16a34a' : '#dc2626',
+                boxColor: isMatch ? '#16a34a' : (nama === 'Tidak dikenal' ? '#dc2626' : '#94a3b8'),
             }).draw(canvas);
 
-            if (isMatch && !recording && (!lokasiAktif || geoStatus === 'ok')) {
+            if (matchedFullDet && isMatch && !recording && (!lokasiAktif || geoStatus === 'ok')) {
                 const siswaId = parseInt(best.label, 10);
                 const last = recentlyRecorded.get(siswaId) || 0;
-                if (Date.now() - last > COOLDOWN_MS) {
-                    if (blinkTracker.observe(siswaId, det.landmarks)) {
+                if (now - last > COOLDOWN_MS) {
+                    // Wajah yang terlalu kecil di frame (jauh dari kamera) bikin area
+                    // mata cuma beberapa piksel -- landmark 68-titiknya jadi kasar dan
+                    // EAR nyaris tidak bergerak walau benar-benar berkedip (dikonfirmasi
+                    // di device uji: EAR cuma turun ~7% saat kejauhan, vs jauh lebih
+                    // dalam saat wajah dekat kamera). Kalau kejauhan, kasih tahu user
+                    // untuk mendekat dulu alih-alih diam-diam gagal terus kedipannya.
+                    if (box.width / dims.width < MIN_FACE_WIDTH_RATIO) {
+                        setStatus(`${nama} dikenali — dekatkan wajah ke kamera untuk verifikasi kedipan.`);
+                    } else if (blinkTracker.observe(siswaId, matchedFullDet.landmarks)) {
                         await recordAttendance(siswaId);
                     } else {
                         setStatus(`${nama} dikenali — kedipkan mata untuk verifikasi kehadiran.`);
+                    }
+                    if (debugEl) {
+                        const bd = blinkTracker.getDebugInfo(siswaId);
+                        if (bd) {
+                            debugEl.textContent =
+                                `backend: ${faceapi.tf.getBackend()}\n` +
+                                `EAR: ${bd.ear.toFixed(3)}  threshold: ${bd.threshold.toFixed(3)}  baseline: ${bd.baseline.toFixed(3)}`;
+                        }
                     }
                 }
             }
@@ -254,6 +377,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     switchCameraBtn.classList.remove('opacity-50', 'pointer-events-none');
                 });
+            }
+
+            // Warm-up: forward pass PERTAMA di backend webgl jauh lebih lambat
+            // dari yang berikutnya (browser compile shader GPU sekali di awal
+            // -- bisa makan beberapa detik di HP). Kalau tidak di-warm-up di
+            // sini, biaya itu jatuh ke iterasi pertama loop() sungguhan, yaitu
+            // pas siswa sudah di depan kamera coba absen -- kerasa seperti
+            // "ngelag lama". Jalankan sekali di layar loading supaya siswa
+            // cuma nunggu di status "menyiapkan", bukan pas lagi discan.
+            setStatus('Menyiapkan pengenalan wajah…');
+            try {
+                const t0 = performance.now();
+                await faceapi.detectAllFaces(video, detectorOptions()).withFaceLandmarks().withFaceDescriptors();
+                const warmupMs = performance.now() - t0;
+                console.info(`[face-api] warm-up: ${warmupMs.toFixed(0)}ms`);
+                if (debugEl) debugEl.textContent = `backend: ${faceapi.tf.getBackend()}\nwarm-up: ${warmupMs.toFixed(0)}ms`;
+            } catch (e) {
+                console.warn('Warm-up deteksi gagal (dilanjutkan tanpa warm-up):', e);
             }
 
             setStatus('Kamera aktif. Arahkan wajah ke kamera untuk absen otomatis.');
