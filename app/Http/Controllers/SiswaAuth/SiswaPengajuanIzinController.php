@@ -44,7 +44,7 @@ class SiswaPengajuanIzinController extends Controller
         $validated = $request->validate([
             'jenis'       => ['required', 'in:izin,sakit,pulang_cepat'],
             'keterangan'  => ['required', 'string', 'max:255'],
-            'bukti'       => ['required', 'image', 'max:2048'],
+            'bukti'       => ['nullable', 'image', 'max:2048'],
         ]);
 
         $today = Pengaturan::sekarang()->startOfDay();
@@ -81,11 +81,13 @@ class SiswaPengajuanIzinController extends Controller
             return back()->with('error', "Kamu sudah punya pengajuan {$label} untuk hari ini.");
         }
 
-        if ($pengajuanHariIni) {
+        if ($pengajuanHariIni && $pengajuanHariIni->bukti) {
             Storage::disk('public')->delete($pengajuanHariIni->bukti);
         }
 
-        $buktiPath = $request->file('bukti')->store('bukti-izin', 'public');
+        $buktiPath = $request->hasFile('bukti')
+            ? $request->file('bukti')->store('bukti-izin', 'public')
+            : null;
 
         $pengajuan = $pengajuanHariIni ?? new PengajuanIzin([
             'siswa_id' => $siswa->id,
@@ -109,7 +111,9 @@ class SiswaPengajuanIzinController extends Controller
             // diam menimpa punya pemenang race dengan punya yang kalah lewat
             // createOrFirst() -- di sini yang kalah malah ditolak jelas,
             // bukan menimpa punya orang lain secara diam-diam.
-            Storage::disk('public')->delete($buktiPath);
+            if ($buktiPath) {
+                Storage::disk('public')->delete($buktiPath);
+            }
 
             return back()->with('error', 'Kamu sudah punya pengajuan izin/sakit untuk hari ini.');
         }

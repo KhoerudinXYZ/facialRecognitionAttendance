@@ -13,8 +13,8 @@
             @endif
         </div>
 
-        <div class="relative bg-black rounded-lg overflow-hidden aspect-video flex items-center justify-center">
-            <video id="enroll-video" autoplay muted playsinline class="w-full h-full object-cover"></video>
+        <div class="relative bg-black rounded-[2rem] overflow-hidden aspect-square max-w-sm mx-auto flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-inner">
+            <video id="enroll-video" autoplay muted playsinline class="w-full h-full object-cover scale-x-[-1]"></video>
         </div>
 
         <div>

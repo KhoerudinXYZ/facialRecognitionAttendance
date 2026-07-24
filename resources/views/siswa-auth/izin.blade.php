@@ -141,9 +141,9 @@
                         </div>
 
                         <div>
-                            <x-input-label for="bukti" value="Bukti Surat / Foto" class="font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] font-jakarta" />
-                            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-jakarta mt-0.5 mb-1">Untuk izin pulang cepat, unggah foto surat izin orang tua atau bukti keperluan.</p>
-                            <input id="bukti" type="file" name="bukti" accept="image/*" required
+                            <x-input-label for="bukti" value="Bukti Surat / Foto (Opsional)" class="font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] font-jakarta" />
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-jakarta mt-0.5 mb-1">Unggah foto surat atau bukti keperluan jika ada.</p>
+                            <input id="bukti" type="file" name="bukti" accept="image/*"
                                    class="block mt-1 w-full text-sm text-slate-600 dark:text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:font-lexend file:bg-indigo-500 file:text-white hover:file:bg-indigo-600 file:shadow-md file:shadow-indigo-500/20 file:transition-all file:duration-300 border-2 border-slate-200 dark:border-slate-700 p-2 rounded-2xl bg-white/60 dark:bg-slate-900/50 shadow-inner backdrop-blur-sm" />
                             <x-input-error :messages="$errors->get('bukti')" class="mt-2" />
                         </div>

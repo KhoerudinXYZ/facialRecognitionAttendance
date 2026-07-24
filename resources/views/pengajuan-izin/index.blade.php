@@ -106,10 +106,14 @@
                         </div>
                         <div class="flex flex-col">
                             <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest font-jakarta">Bukti</span>
-                            <a href="{{ \Illuminate\Support\Facades\Storage::url($p->bukti) }}" target="_blank" rel="noopener"
-                               class="inline-flex items-center gap-1.5 mt-0.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-lexend font-bold text-sm transition-colors">
-                                <x-icon name="eye" class="w-4 h-4 stroke-[2.5]" /> Lihat
-                            </a>
+                            @if ($p->bukti)
+                                <a href="{{ \Illuminate\Support\Facades\Storage::url($p->bukti) }}" target="_blank" rel="noopener"
+                                   class="inline-flex items-center gap-1.5 mt-0.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-lexend font-bold text-sm transition-colors">
+                                    <x-icon name="eye" class="w-4 h-4 stroke-[2.5]" /> Lihat
+                                </a>
+                            @else
+                                <span class="font-lexend font-bold text-sm text-slate-400 dark:text-slate-500 mt-0.5">—</span>
+                            @endif
                         </div>
                     </div>
 

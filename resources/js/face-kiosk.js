@@ -310,17 +310,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 boxColor: isMatch ? '#16a34a' : (nama === 'Tidak dikenal' ? '#dc2626' : '#94a3b8'),
             }).draw(canvas);
 
-            if (matchedFullDet && isMatch && !recording && (!lokasiAktif || geoStatus === 'ok')) {
+            if (matchedFullDet && isMatch && !recording) {
                 const siswaId = parseInt(best.label, 10);
                 const last = recentlyRecorded.get(siswaId) || 0;
                 if (now - last > COOLDOWN_MS) {
-                    // Wajah yang terlalu kecil di frame (jauh dari kamera) bikin area
-                    // mata cuma beberapa piksel -- landmark 68-titiknya jadi kasar dan
-                    // EAR nyaris tidak bergerak walau benar-benar berkedip (dikonfirmasi
-                    // di device uji: EAR cuma turun ~7% saat kejauhan, vs jauh lebih
-                    // dalam saat wajah dekat kamera). Kalau kejauhan, kasih tahu user
-                    // untuk mendekat dulu alih-alih diam-diam gagal terus kedipannya.
-                    if (box.width / dims.width < MIN_FACE_WIDTH_RATIO) {
+                    // Sebelumnya kondisi geoStatus ada di kondisi if TERLUAR --
+                    // kalau lokasi aktif tapi izinnya belum 'ok' (masih pending,
+                    // ditolak, atau tidak didukung), seluruh blok ini (termasuk
+                    // status "kedipkan mata") dilewati BEGITU SAJA tanpa pesan
+                    // apa pun. Wajah tetap kelihatan dikenali (kotak hijau di
+                    // kamera) tapi tidak ada progres sama sekali dan user tidak
+                    // tahu kenapa -- kelihatan seperti "kedipan tidak terdeteksi"
+                    // padahal sebenarnya macet nunggu izin lokasi. Sekarang
+                    // dicek eksplisit duluan supaya selalu ada pesan yang jelas.
+                    if (lokasiAktif && geoStatus !== 'ok') {
+                        const pesanLokasi = {
+                            pending: 'menunggu izin lokasi — pastikan sudah menekan "Izinkan" di popup lokasi browser dan GPS/Location HP menyala.',
+                            denied: 'izin lokasi ditolak. Aktifkan izin lokasi di pengaturan browser lalu muat ulang halaman.',
+                            unsupported: 'browser tidak mendukung lokasi GPS. Hubungi admin untuk absen manual.',
+                        }[geoStatus] || 'menunggu lokasi GPS…';
+                        setStatus(`${nama} dikenali — ${pesanLokasi}`);
+                    } else if (box.width / dims.width < MIN_FACE_WIDTH_RATIO) {
+                        // Wajah yang terlalu kecil di frame (jauh dari kamera) bikin area
+                        // mata cuma beberapa piksel -- landmark 68-titiknya jadi kasar dan
+                        // EAR nyaris tidak bergerak walau benar-benar berkedip (dikonfirmasi
+                        // di device uji: EAR cuma turun ~7% saat kejauhan, vs jauh lebih
+                        // dalam saat wajah dekat kamera). Kalau kejauhan, kasih tahu user
+                        // untuk mendekat dulu alih-alih diam-diam gagal terus kedipannya.
                         setStatus(`${nama} dikenali — dekatkan wajah ke kamera untuk verifikasi kedipan.`);
                     } else if (blinkTracker.observe(siswaId, matchedFullDet.landmarks)) {
                         await recordAttendance(siswaId);
