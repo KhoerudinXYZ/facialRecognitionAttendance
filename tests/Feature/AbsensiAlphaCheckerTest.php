@@ -12,6 +12,7 @@ use App\Models\Siswa;
 use App\Services\AbsensiAlphaChecker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -57,6 +58,27 @@ class AbsensiAlphaCheckerTest extends TestCase
             'status' => 'terkirim',
         ]);
         Mail::assertSent(SiswaAlphaMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
+    }
+
+    public function test_siswa_alpha_dinotifikasi_whatsapp_kalau_fonnte_aktif(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        Http::fake(['api.fonnte.com/*' => Http::response(['status' => true], 200)]);
+        Carbon::setTestNow('2026-07-13 20:00:00');
+        $siswa = $this->siswa(['no_hp_orang_tua' => '081234567890']);
+
+        app(AbsensiAlphaChecker::class)->jalankan();
+
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'kanal' => 'whatsapp',
+            'kontak' => '6281234567890',
+            'status' => 'terkirim',
+        ]);
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.fonnte.com/send'
+            && $request['target'] === '6281234567890');
     }
 
     public function test_siswa_tanpa_email_orang_tua_tetap_ditandai_alpha_tapi_notifikasi_dicatat_tidak_ada_kontak(): void

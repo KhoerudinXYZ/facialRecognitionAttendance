@@ -3,7 +3,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <h2 class="font-outfit font-black text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-900 to-indigo-600 dark:from-white dark:via-indigo-100 dark:to-indigo-400 tracking-tight">Notifikasi Orang Tua</h2>
-                <p class="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-jakarta mt-0.5">Riwayat Pengiriman Email Absensi</p>
+                <p class="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-jakarta mt-0.5">Riwayat Pengiriman Email &amp; WhatsApp Absensi</p>
             </div>
         </div>
     </x-slot>
@@ -18,8 +18,8 @@
                 <div>
                     <span class="font-outfit font-black text-lg text-slate-800 dark:text-slate-100 block">Sistem Notifikasi Otomatis</span>
                     <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 font-jakarta mt-1 leading-relaxed">
-                        Riwayat notifikasi email ke orang tua: konfirmasi <strong class="text-indigo-600 dark:text-indigo-400">kehadiran</strong> (dikirim otomatis tiap siswa absen masuk) dan pemberitahuan <strong class="text-rose-600 dark:text-rose-400">alpha</strong> (siswa belum absen sampai beberapa jam setelah jam pulang). 
-                        Kalau <code>MAIL_MAILER</code> di server menggunakan <code>log</code> (belum SMTP asli), status "Terkirim" berarti email berhasil ditulis ke log lokal.
+                        Riwayat notifikasi ke orang tua lewat email &amp; WhatsApp: konfirmasi <strong class="text-indigo-600 dark:text-indigo-400">kehadiran</strong> (dikirim otomatis tiap siswa absen masuk) dan pemberitahuan <strong class="text-rose-600 dark:text-rose-400">alpha</strong> (siswa belum absen sampai beberapa jam setelah jam pulang).
+                        Kalau <code>MAIL_MAILER</code> di server menggunakan <code>log</code> (belum SMTP asli), status "Terkirim" berarti email berhasil ditulis ke log lokal. Kanal WhatsApp cuma aktif kalau <code>FONNTE_TOKEN</code> sudah diisi di server.
                     </p>
                 </div>
             </div>
@@ -31,7 +31,7 @@
 
             <div class="flex items-center justify-between pb-5 border-b border-slate-200/50 dark:border-slate-700/50 relative z-10 mb-2">
                 <div>
-                    <h3 class="font-outfit font-black text-lg text-slate-800 dark:text-slate-100 tracking-tight">Daftar Pengiriman Email</h3>
+                    <h3 class="font-outfit font-black text-lg text-slate-800 dark:text-slate-100 tracking-tight">Daftar Pengiriman Notifikasi</h3>
                     <span class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-jakarta">Total {{ $log->total() }} Notifikasi</span>
                 </div>
             </div>
@@ -43,7 +43,8 @@
                             <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Tanggal & Waktu</th>
                             <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Info Siswa</th>
                             <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Jenis Notifikasi</th>
-                            <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Alamat Email</th>
+                            <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Kanal</th>
+                            <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Kontak</th>
                             <th class="px-5 py-3 text-center text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Status</th>
                         </tr>
                     </thead>
@@ -76,6 +77,17 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-4">
+                                    @if (($entry->kanal ?? 'email') === 'whatsapp')
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-lexend font-bold text-[10px] uppercase tracking-wider border border-emerald-200/50 dark:border-emerald-800/50">
+                                            WhatsApp
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-lexend font-bold text-[10px] uppercase tracking-wider border border-slate-200/50 dark:border-slate-700/50">
+                                            Email
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-4">
                                     <span class="font-jakarta font-semibold text-slate-600 dark:text-slate-300">{{ $entry->kontak ?? '-' }}</span>
                                 </td>
                                 <td class="px-5 py-4 text-center">
@@ -85,7 +97,7 @@
                                         </span>
                                     @elseif ($entry->status === 'tidak_ada_kontak')
                                         <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400 shadow-none">
-                                            Tanpa Email
+                                            Tanpa Kontak
                                         </span>
                                     @else
                                         <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md bg-amber-500 text-white shadow-amber-500/30">
@@ -96,7 +108,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center">
+                                <td colspan="6" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center gap-3">
                                         <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
                                             <x-icon name="mail" class="w-7 h-7 stroke-[1.5]" />

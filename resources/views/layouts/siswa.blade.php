@@ -8,6 +8,12 @@
         <title>{{ config('app.name', 'Laravel') }} - Siswa</title>
         <link rel="icon" type="image/png" href="{{ asset('images/logo-sekolah.png') }}">
 
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
+        <meta name="theme-color" content="#4f46e5">
+        <link rel="apple-touch-icon" href="{{ asset('images/icons/icon-192.png') }}">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="SIABSEN">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 

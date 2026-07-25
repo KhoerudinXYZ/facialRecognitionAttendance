@@ -20,11 +20,10 @@ use Throwable;
  * AbsensiRecorder::record()), supaya begitu absen masuk ditutup, siswa yang
  * memang tidak hadir langsung resmi alpha di jam yang sama, bukan nge-gantung
  * beberapa jam dulu. Begitu lewat mulai_pulang, siswa aktif yang sampai saat
- * ini belum punya baris absensi hari ini ditandai alpha, lalu (kalau email
- * orang tua terdaftar) dikirimi notifikasi. Kanal WhatsApp sempat dibangun
- * tapi untuk sekarang dipakai email dulu (belum ada penyedia WhatsApp API
- * yang dipilih) — no_hp_orang_tua tetap tersimpan di Siswa untuk dipakai
- * lagi nanti.
+ * ini belum punya baris absensi hari ini ditandai alpha, lalu dikirimi
+ * notifikasi lewat email (kalau email orang tua terdaftar) dan WhatsApp/
+ * Fonnte (kalau FONNTE_TOKEN diisi & no_hp_orang_tua terdaftar) — dua kanal
+ * independen, lihat WhatsAppNotifier.
  */
 class AbsensiAlphaChecker
 {
@@ -84,29 +83,31 @@ class AbsensiAlphaChecker
                 'siswa_nama' => $siswa->nama,
                 'tanggal' => $tanggal,
                 'jenis' => 'alpha',
+                'kanal' => 'email',
                 'kontak' => null,
                 'pesan' => $pesan,
                 'status' => 'tidak_ada_kontak',
             ]);
+        } else {
+            try {
+                Mail::to($siswa->email_orang_tua)->send(new SiswaAlphaMail($siswa->nama, $tanggal));
+                $status = 'terkirim';
+            } catch (Throwable) {
+                $status = 'gagal';
+            }
 
-            return;
+            NotifikasiAbsensiLog::create([
+                'siswa_id' => $siswa->id,
+                'siswa_nama' => $siswa->nama,
+                'tanggal' => $tanggal,
+                'jenis' => 'alpha',
+                'kanal' => 'email',
+                'kontak' => $siswa->email_orang_tua,
+                'pesan' => $pesan,
+                'status' => $status,
+            ]);
         }
 
-        try {
-            Mail::to($siswa->email_orang_tua)->send(new SiswaAlphaMail($siswa->nama, $tanggal));
-            $status = 'terkirim';
-        } catch (Throwable) {
-            $status = 'gagal';
-        }
-
-        NotifikasiAbsensiLog::create([
-            'siswa_id' => $siswa->id,
-            'siswa_nama' => $siswa->nama,
-            'tanggal' => $tanggal,
-            'jenis' => 'alpha',
-            'kontak' => $siswa->email_orang_tua,
-            'pesan' => $pesan,
-            'status' => $status,
-        ]);
+        app(WhatsAppNotifier::class)->kirimDanCatat($siswa, $tanggal, 'alpha', $pesan);
     }
 }
