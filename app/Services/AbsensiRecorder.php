@@ -227,7 +227,13 @@ class AbsensiRecorder
             ]);
         }
 
-        app(WhatsAppNotifier::class)->kirimDanCatat($siswa, $tanggal, 'kehadiran', $pesan);
+        // Sengaja terkunci di belakang toggle terpisah (bukan cuma
+        // FONNTE_TOKEN) — rollout bertahap: alpha jalan duluan (volume
+        // kecil), kehadiran (volume tinggi, burst tiap pagi) menyusul
+        // begitu nomor WA sudah "hangat". Lihat FONNTE_KEHADIRAN_AKTIF di .env.
+        if (config('services.fonnte.kehadiran_aktif')) {
+            app(WhatsAppNotifier::class)->kirimDanCatat($siswa, $tanggal, 'kehadiran', $pesan);
+        }
     }
 
     /**

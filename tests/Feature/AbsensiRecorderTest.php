@@ -368,7 +368,7 @@ class AbsensiRecorderTest extends TestCase
 
     public function test_absen_masuk_mengirim_whatsapp_ke_orang_tua_kalau_fonnte_aktif(): void
     {
-        config(['services.fonnte.token' => 'test-token']);
+        config(['services.fonnte.token' => 'test-token', 'services.fonnte.kehadiran_aktif' => true]);
         Http::fake(['api.fonnte.com/*' => Http::response(['status' => true], 200)]);
         Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
         Carbon::setTestNow('2026-07-13 07:00:00');
@@ -385,6 +385,25 @@ class AbsensiRecorderTest extends TestCase
         ]);
         Http::assertSent(fn ($request) => $request->url() === 'https://api.fonnte.com/send'
             && $request['target'] === '6281234567890');
+    }
+
+    public function test_absen_masuk_tidak_mengirim_whatsapp_kalau_kehadiran_belum_diaktifkan(): void
+    {
+        // FONNTE_KEHADIRAN_AKTIF default false - rollout bertahap, alpha
+        // duluan (lihat AbsensiAlphaCheckerTest), kehadiran menyusul manual.
+        config(['services.fonnte.token' => 'test-token', 'services.fonnte.kehadiran_aktif' => false]);
+        Http::fake();
+        Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        $siswa = $this->siswa(['no_hp_orang_tua' => '081234567890']);
+
+        app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertDatabaseMissing('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'kanal' => 'whatsapp',
+        ]);
+        Http::assertNothingSent();
     }
 
     public function test_absen_masuk_tidak_mencoba_whatsapp_kalau_fonnte_token_kosong(): void

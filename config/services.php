@@ -37,6 +37,11 @@ return [
 
     'fonnte' => [
         'token' => env('FONNTE_TOKEN'),
+        // Rollout bertahap: alpha (volume kecil, cuma siswa yang tidak hadir)
+        // aktif duluan begitu token diisi. Kehadiran (volume tinggi, burst
+        // tiap pagi) sengaja dikunci di belakang toggle terpisah ini supaya
+        // nomor WhatsApp "menghangat" dulu sebelum dipakai volume tinggi.
+        'kehadiran_aktif' => env('FONNTE_KEHADIRAN_AKTIF', false),
     ],
 
 ];
