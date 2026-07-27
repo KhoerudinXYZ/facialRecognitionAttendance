@@ -60,6 +60,11 @@ class SiswaDashboardController extends Controller
         $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
         $bisaAbsenPulang = $now->greaterThanOrEqualTo($mulaiPulang);
 
-        return view('siswa-auth.dashboard', compact('siswa', 'absenHariIni', 'statistikBulanIni', 'mingguIni', 'isLibur', 'pengaturan', 'bisaAbsenPulang'));
+        // Sama seperti gate di AbsensiRecorder/SiswaAbsensiController: belum
+        // jam_masuk berarti tombol absen belum seharusnya aktif sama sekali.
+        $jamMasukMulai = Carbon::parse($today->toDateString() . ' ' . $pengaturan->jam_masuk);
+        $sebelumJamMasuk = $now->lessThan($jamMasukMulai);
+
+        return view('siswa-auth.dashboard', compact('siswa', 'absenHariIni', 'statistikBulanIni', 'mingguIni', 'isLibur', 'pengaturan', 'bisaAbsenPulang', 'sebelumJamMasuk'));
     }
 }

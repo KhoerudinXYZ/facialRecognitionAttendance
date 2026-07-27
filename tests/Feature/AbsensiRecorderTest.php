@@ -287,6 +287,30 @@ class AbsensiRecorderTest extends TestCase
         $this->assertDatabaseHas('absensi', ['siswa_id' => $siswa->id, 'status' => 'alpha', 'jam_masuk' => null]);
     }
 
+    public function test_absen_masuk_ditolak_sebelum_jam_masuk(): void
+    {
+        Pengaturan::get()->update(['jam_masuk' => '07:00', 'batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        Carbon::setTestNow('2026-07-13 03:00:00');
+        $siswa = $this->siswa();
+
+        $result = app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertSame('belum_buka', $result['status']);
+        $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
+    }
+
+    public function test_absen_masuk_berhasil_tepat_saat_jam_masuk(): void
+    {
+        Pengaturan::get()->update(['jam_masuk' => '07:00', 'batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        $siswa = $this->siswa();
+
+        $result = app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertSame('success', $result['status']);
+        $this->assertDatabaseHas('absensi', ['siswa_id' => $siswa->id, 'status' => 'hadir']);
+    }
+
     public function test_siswa_yang_izin_atau_sakit_tidak_bisa_absen_scan(): void
     {
         Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);

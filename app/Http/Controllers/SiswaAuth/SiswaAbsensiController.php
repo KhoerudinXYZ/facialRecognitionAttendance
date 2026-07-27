@@ -85,6 +85,17 @@ class SiswaAbsensiController extends Controller
             $pesanTerkunci = "Jam absen masuk sudah ditutup untuk hari ini (mulai {$pengaturan->mulai_pulang}).";
         }
 
+        // Batas bawah: sebelum ini, AbsensiRecorder cuma menolak SETELAH
+        // kamera dibuka & wajah discan -- siswa bisa buka kamera jam 3 pagi
+        // tanpa ada yang mencegah. Sekarang dikunci dari sini juga supaya
+        // kamera tidak usah dibuka sama sekali sebelum jam_masuk.
+        $jamMasukMulai = Carbon::parse($today->toDateString() . ' ' . $pengaturan->jam_masuk);
+        if ((! $absenHariIni || $absenHariIni->status === 'alpha') && $now->lessThan($jamMasukMulai)) {
+            $kameraTerkunci = true;
+            $pesanTerkunci = 'Absen masuk belum dibuka. Kamera baru aktif mulai pukul '
+                . \Illuminate\Support\Str::of($pengaturan->jam_masuk)->substr(0, 5) . '.';
+        }
+
         $siswa->load('faceDescriptors');
 
         $labeledDescriptors = [[

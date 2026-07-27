@@ -14,9 +14,36 @@
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-black font-lexend bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-500/20 shadow-sm backdrop-blur-md uppercase tracking-widest">
                         NIS {{ $siswa->nis }}
                     </span>
-                    <span class="text-[10px] sm:text-xs font-black font-lexend text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                        {{ now()->translatedFormat('d M Y') }}
+                    <span id="jam-langsung" data-server-epoch="{{ now()->timestamp * 1000 }}"
+                          class="text-[10px] sm:text-xs font-black font-lexend text-slate-400 dark:text-slate-500 uppercase tracking-widest tabular-nums">
+                        {{ now()->translatedFormat('d M Y') }} · {{ now()->format('H:i:s') }}
                     </span>
+                    <script>
+                        (function () {
+                            // Selisih waktu server-client dihitung sekali dari epoch
+                            // (angka absolut, tidak lewat parsing string tanggal --
+                            // menghindari salah tafsir timezone kalau jam device
+                            // browser beda dari WIB). Sengaja diformat lewat
+                            // Intl.DateTimeFormat dengan timeZone eksplisit
+                            // 'Asia/Jakarta', bukan Date.getHours() dkk yang selalu
+                            // ikut timezone LOKAL browser -- supaya jam yang tampil
+                            // tetap benar WIB walau jam/timezone di HP siswa salah
+                            // setting.
+                            var el = document.getElementById('jam-langsung');
+                            var offsetMs = Number(el.dataset.serverEpoch) - Date.now();
+                            var formatter = new Intl.DateTimeFormat('id-ID', {
+                                timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+                            });
+                            function render() {
+                                var parts = formatter.formatToParts(new Date(Date.now() + offsetMs));
+                                var get = function (type) { return parts.find(function (p) { return p.type === type; }).value; };
+                                el.textContent = get('day') + ' ' + get('month') + ' ' + get('year') + ' · ' + get('hour') + ':' + get('minute') + ':' + get('second');
+                            }
+                            render();
+                            setInterval(render, 1000);
+                        })();
+                    </script>
                 </div>
 
                 <div class="flex items-center gap-4 sm:gap-5">
@@ -99,7 +126,8 @@
                 $absenSelesai = ($sudahMasuk && $sudahPulang) || $izinSakit;
                 $menungguJamPulang = $sudahMasuk && ! $sudahPulang && ! ($bisaAbsenPulang ?? false);
                 $absenMasukTutup = ! $sudahMasuk && ($bisaAbsenPulang ?? false);
-                $absenNonaktif = $isLibur || $absenSelesai || $menungguJamPulang || $absenMasukTutup;
+                $absenBelumBuka = ! $sudahMasuk && ($sebelumJamMasuk ?? false);
+                $absenNonaktif = $isLibur || $absenSelesai || $menungguJamPulang || $absenMasukTutup || $absenBelumBuka;
             @endphp
             <div class="flex items-center justify-between relative z-10 px-2 sm:px-4">
                 <!-- Step 1: Masuk -->
@@ -155,12 +183,16 @@
                             $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5);
                             $tooltipText = "Jam absen masuk telah ditutup (mulai {$jamPulang})";
                             $iconName = 'clock';
+                        } elseif ($absenBelumBuka) {
+                            $jamMasuk = \Illuminate\Support\Str::of($pengaturan->jam_masuk)->substr(0,5);
+                            $tooltipText = "Absen masuk belum dibuka, mulai pukul {$jamMasuk}";
+                            $iconName = 'clock';
                         }
                     @endphp
                     <div class="flex flex-col items-center shrink-0 -mt-5 group relative z-20" title="{{ $tooltipText }}">
                         <div @class([
                                 'w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] flex flex-col items-center justify-center shadow-xl border-2 backdrop-blur-md transition-all duration-300',
-                                'bg-white/50 text-slate-400 border-white/60 dark:bg-slate-800/50 dark:text-slate-500 dark:border-slate-700/50' => $isLibur || $izinSakit || $absenMasukTutup,
+                                'bg-white/50 text-slate-400 border-white/60 dark:bg-slate-800/50 dark:text-slate-500 dark:border-slate-700/50' => $isLibur || $izinSakit || $absenMasukTutup || $absenBelumBuka,
                                 'bg-amber-500/10 text-amber-600 border-amber-300/50 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30' => $menungguJamPulang,
                                 'bg-emerald-50/80 text-emerald-500 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' => $absenSelesai && !$isLibur && !$izinSakit,
                             ])>
@@ -170,13 +202,15 @@
                             <span @class([
                                     'text-[10px] sm:text-xs font-black uppercase tracking-widest font-lexend',
                                     'text-amber-600 dark:text-amber-400' => $menungguJamPulang,
-                                    'text-slate-400 dark:text-slate-500' => $isLibur || $izinSakit || $absenMasukTutup,
+                                    'text-slate-400 dark:text-slate-500' => $isLibur || $izinSakit || $absenMasukTutup || $absenBelumBuka,
                                     'text-emerald-600 dark:text-emerald-400' => $absenSelesai && !$isLibur && !$izinSakit,
                                 ])>
                                 @if($menungguJamPulang)
                                     Terkunci (Jam {{ \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5) }})
                                 @elseif($absenMasukTutup)
                                     Masuk Ditutup
+                                @elseif($absenBelumBuka)
+                                    Belum Dibuka
                                 @elseif($absenSelesai)
                                     Absen Selesai
                                 @elseif($isLibur)

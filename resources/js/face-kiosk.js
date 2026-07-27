@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     window.location.href = dashboardUrl;
                 }, 1800);
-            } else if (data.status === 'already' || data.status === 'libur' || data.status === 'lokasi' || data.status === 'tutup') {
+            } else if (data.status === 'already' || data.status === 'libur' || data.status === 'lokasi' || data.status === 'tutup' || data.status === 'belum_buka') {
                 showToast('ℹ ' + data.message, false);
                 setVisualState('idle');
             } else {

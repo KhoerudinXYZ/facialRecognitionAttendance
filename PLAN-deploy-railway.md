@@ -79,6 +79,7 @@ adanya dari `.env` lokal:
 | `FONNTE_KEHADIRAN_AKTIF` | putuskan: `true` (langsung aktif) atau `false` (rollout bertahap ulang di lingkungan baru) |
 | `QUEUE_CONNECTION` | `database` (tetap, asal queue worker jalan — lihat bawah) |
 | `FILESYSTEM_DISK` | `local` (kalau pakai Volume) atau `s3` (kalau pindah ke storage eksternal) |
+| `SESSION_SECURE_COOKIE` | `true` — lokal sengaja `false` karena dev server HTTP polos, Railway selalu HTTPS, tanpa ini cookie sesi bisa terkirim tidak terenkripsi |
 
 ## Scheduler (pengganti Windows Task Scheduler)
 

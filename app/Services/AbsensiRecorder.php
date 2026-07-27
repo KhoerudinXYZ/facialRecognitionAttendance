@@ -74,6 +74,19 @@ class AbsensiRecorder
         // Baris alpha (kalau ada) dibiarkan apa adanya di sini; kalau belum
         // ada baris sama sekali, biarkan kosong sampai AbsensiAlphaChecker
         // menandainya alpha di jadwal berikutnya.
+        // Batas bawah: jam_masuk cuma dipakai buat menentukan status
+        // hadir/terlambat (lihat $batas di bawah), tapi tidak pernah benar-
+        // benar menutup absen SEBELUM jam itu -- tanpa cek ini siswa bisa
+        // absen masuk jam 3 pagi dan tercatat 'hadir'.
+        $jamMasukMulai = Carbon::parse($today->toDateString() . ' ' . $pengaturan->jam_masuk);
+        if ((! $existing || $existing->status === 'alpha') && $now->lessThan($jamMasukMulai)) {
+            return [
+                'status' => 'belum_buka',
+                'message' => "Absen masuk belum dibuka. Kamera baru aktif mulai pukul {$pengaturan->jam_masuk}.",
+                'nama' => $siswa->nama,
+            ];
+        }
+
         $mulaiPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->mulai_pulang);
         if ((! $existing || $existing->status === 'alpha') && $now->greaterThanOrEqualTo($mulaiPulang)) {
             return [

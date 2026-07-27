@@ -18,13 +18,17 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('portal')->name('siswa.')->group(function () {
     Route::middleware('guest.siswa')->group(function () {
         Route::get('register', [SiswaRegistrationController::class, 'create'])->name('register');
-        Route::post('register', [SiswaRegistrationController::class, 'store']);
+        // throttle:6,1 -- tanpa ini, NIS (bukan rahasia di sekolah, ada di
+        // absen manual/daftar kelas) bisa dicoba-coba berkali-kali tanpa
+        // batas buat klaim akun siswa lain duluan sebelum pemiliknya
+        // sendiri sempat registrasi.
+        Route::post('register', [SiswaRegistrationController::class, 'store'])->middleware('throttle:6,1');
 
         Route::get('login', [SiswaSessionController::class, 'create'])->name('login');
         Route::post('login', [SiswaSessionController::class, 'store']);
 
         Route::get('forgot-password', [SiswaPasswordResetLinkController::class, 'create'])->name('password.request');
-        Route::post('forgot-password', [SiswaPasswordResetLinkController::class, 'store'])->name('password.email');
+        Route::post('forgot-password', [SiswaPasswordResetLinkController::class, 'store'])->name('password.email')->middleware('throttle:6,1');
         Route::get('reset-password/{token}', [SiswaNewPasswordController::class, 'create'])->name('password.reset');
         Route::post('reset-password', [SiswaNewPasswordController::class, 'store'])->name('password.store');
     });

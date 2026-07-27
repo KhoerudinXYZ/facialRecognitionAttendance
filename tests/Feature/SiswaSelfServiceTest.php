@@ -70,6 +70,28 @@ class SiswaSelfServiceTest extends TestCase
         $this->assertNotNull($siswa->password);
     }
 
+    public function test_registrasi_dibatasi_setelah_percobaan_berulang(): void
+    {
+        // NIS bukan rahasia di sekolah (ada di absen manual/daftar kelas) --
+        // tanpa throttle, siapa saja bisa coba klaim NIS orang lain
+        // berkali-kali tanpa batas begitu aplikasi online publik.
+        for ($i = 0; $i < 6; $i++) {
+            $this->post('/portal/register', [
+                'nis' => 'nis-tidak-ada-' . $i,
+                'username' => 'percobaan' . $i,
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+            ]);
+        }
+
+        $this->post('/portal/register', [
+            'nis' => 'nis-tidak-ada-7',
+            'username' => 'percobaan7',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertStatus(429);
+    }
+
     public function test_race_klaim_nis_hampir_bersamaan_tidak_saling_menimpa(): void
     {
         $siswa = $this->siswaBelumRegistrasi();
@@ -144,6 +166,28 @@ class SiswaSelfServiceTest extends TestCase
         Carbon::setTestNow('2026-07-13 13:30:00');
         $this->postJson('/portal/absen', ['liveness_verified' => true])->assertOk()->assertJsonPath('status', 'success');
         $this->assertDatabaseHas('absensi', ['siswa_id' => $siswa->id, 'jam_pulang' => '13:30:00']);
+    }
+
+    public function test_kamera_absen_terkunci_sebelum_jam_masuk(): void
+    {
+        Pengaturan::get()->update(['jam_masuk' => '07:00', 'batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+        Carbon::setTestNow('2026-07-13 03:00:00');
+
+        $siswa = $this->siswaBelumRegistrasi();
+        $this->registrasikanAkun($siswa, 'budi01', 'password123');
+        $this->actingAs($siswa, 'siswa');
+
+        // Halaman kamera tetap render (bukan redirect) tapi terkunci --
+        // sebelumnya tidak ada gate ini sama sekali, siswa bisa buka kamera
+        // & absen jam berapa pun sebelum jam_masuk.
+        $this->get('/portal/absen')
+            ->assertOk()
+            ->assertViewHas('kameraTerkunci', true)
+            ->assertSee('belum dibuka', false);
+
+        $this->postJson('/portal/absen', ['liveness_verified' => true])
+            ->assertOk()->assertJsonPath('status', 'belum_buka');
+        $this->assertEquals(0, Absensi::where('siswa_id', $siswa->id)->count());
     }
 
     public function test_siswa_absen_mandiri_di_luar_radius_ditolak(): void
