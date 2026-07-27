@@ -1,7 +1,10 @@
 # Rencana: Notifikasi "Belum Hadir" (Peringatan Pagi)
 
-> Status: **requirement/spec dulu, belum diimplementasi.**
-> Ditulis untuk dikerjakan setelah demo, bukan malam sebelum demo.
+> Status: **sudah diimplementasi** (2026-07-27) — `AbsensiBelumHadirChecker`,
+> command `absensi:cek-belum-hadir` (cron tiap 10 menit, 07:00-11:00),
+> field `Pengaturan::jam_cek_belum_hadir` di halaman Pengaturan, jenis
+> `belum_hadir` di log & halaman Notifikasi. Lihat jawaban pertanyaan
+> terbuka di bagian bawah untuk keputusan yang diambil.
 
 ## Latar Belakang
 
@@ -49,8 +52,10 @@ Cara paling konsisten dengan pola yang sudah ada: sebelum kirim, cek `Notifikasi
 - Kalau siswa akhirnya datang **setelah** notifikasi "belum hadir" terkirim → notifikasi "hadir" (yang sudah ada) tetap terkirim seperti biasa, tidak disupres. Orang tua akan terima 2 email di hari itu (belum hadir jam 09:30, lalu hadir/terlambat begitu benar-benar datang) — dianggap wajar, bukan duplikat, karena beda informasi.
 - Kalau siswa tetap tidak datang sampai akhir hari → notifikasi alpha (yang sudah ada) tetap terkirim terpisah di jam pulang, sesuai jadwal yang sudah berjalan.
 
-## Pertanyaan Terbuka (Perlu Dijawab Sebelum/Saat Implementasi)
+## Pertanyaan Terbuka — Jawaban yang Diambil Saat Implementasi (2026-07-27)
 
-- [ ] Apakah field `jam_cek_belum_hadir` perlu toggle aktif/nonaktif terpisah, atau cukup dianggap "aktif" begitu ada nilai jamnya di Pengaturan?
-- [ ] Kanal pengiriman: email dulu (mengikuti pola yang sudah ada), lalu WhatsApp menyusul begitu kanal WA sudah siap (sesuai diskusi kerangka notifikasi WA sebelumnya)?
-- [ ] Perlu view/menampilkan histori notifikasi jenis `belum_hadir` ini juga di halaman Log Notifikasi admin (`notifikasi/index.blade.php`) — kemungkinan otomatis muncul kalau memakai tabel `notifikasi_absensi_log` yang sama, tinggal pastikan filter/label jenisnya ditangani di view.
+- [x] Tidak ada toggle terpisah — cukup dianggap aktif begitu `jam_cek_belum_hadir` diisi, persis pola `lokasiAktif()` (`Pengaturan::cekBelumHadirAktif()`).
+- [x] Email + WhatsApp langsung dari awal, bukan email dulu — volume notifikasi ini kecil (cuma siswa yang belum hadir), jadi mengikuti pola `alpha` (WA aktif begitu `FONNTE_TOKEN` terisi), BUKAN dikunci di belakang `FONNTE_KEHADIRAN_AKTIF` seperti `kehadiran` yang volumenya tinggi/burst.
+- [x] Otomatis muncul di `notifikasi/index.blade.php` lewat tabel `notifikasi_absensi_log` yang sama; ditambahkan badge amber terpisah untuk jenis `belum_hadir` (sebelumnya cuma ada kehadiran/alpha).
+
+Detail implementasi: `AbsensiBelumHadirChecker` (tidak menulis baris `absensi`, beda dari `AbsensiAlphaChecker`), command `absensi:cek-belum-hadir` dijadwalkan `everyTenMinutes()->between('07:00','11:00')` di `routes/console.php`. Sekalian ditemukan & diperbaiki celah test isolation: `phpunit.xml` sebelumnya tidak meng-override `FONNTE_TOKEN`/`FONNTE_KEHADIRAN_AKTIF`, jadi test yang tidak eksplisit `config()` override mewarisi kredensial asli dari `.env` dan bisa memicu HTTP request sungguhan ke Fonnte.

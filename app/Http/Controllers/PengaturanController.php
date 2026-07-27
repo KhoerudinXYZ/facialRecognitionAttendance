@@ -26,6 +26,7 @@ class PengaturanController extends Controller
             'jam_masuk' => ['required', 'date_format:H:i'],
             'batas_terlambat' => ['required', 'date_format:H:i'],
             'mulai_pulang' => ['required', 'date_format:H:i'],
+            'jam_cek_belum_hadir' => ['nullable', 'date_format:H:i'],
         ]);
 
         Pengaturan::get()->update($data);

@@ -18,7 +18,7 @@
                 <div>
                     <span class="font-outfit font-black text-lg text-slate-800 dark:text-slate-100 block">Sistem Notifikasi Otomatis</span>
                     <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 font-jakarta mt-1 leading-relaxed">
-                        Riwayat notifikasi ke orang tua lewat email &amp; WhatsApp: konfirmasi <strong class="text-indigo-600 dark:text-indigo-400">kehadiran</strong> (dikirim otomatis tiap siswa absen masuk) dan pemberitahuan <strong class="text-rose-600 dark:text-rose-400">alpha</strong> (siswa belum absen sampai beberapa jam setelah jam pulang).
+                        Riwayat notifikasi ke orang tua lewat email &amp; WhatsApp: konfirmasi <strong class="text-indigo-600 dark:text-indigo-400">kehadiran</strong> (dikirim otomatis tiap siswa absen masuk), peringatan dini <strong class="text-amber-600 dark:text-amber-400">belum hadir</strong> (siswa belum absen di jam yang diatur admin), dan pemberitahuan <strong class="text-rose-600 dark:text-rose-400">alpha</strong> (siswa belum absen sampai beberapa jam setelah jam pulang).
                         Kalau <code>MAIL_MAILER</code> di server menggunakan <code>log</code> (belum SMTP asli), status "Terkirim" berarti email berhasil ditulis ke log lokal. Kanal WhatsApp cuma aktif kalau <code>FONNTE_TOKEN</code> sudah diisi di server.
                     </p>
                 </div>
@@ -69,6 +69,10 @@
                                     @if ($entry->jenis === 'kehadiran')
                                         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-lexend font-bold text-[10px] uppercase tracking-wider border border-indigo-200/50 dark:border-indigo-800/50">
                                             <x-icon name="check-circle" class="w-3 h-3 stroke-[2.5]" /> Kehadiran
+                                        </span>
+                                    @elseif ($entry->jenis === 'belum_hadir')
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-lexend font-bold text-[10px] uppercase tracking-wider border border-amber-200/50 dark:border-amber-800/50">
+                                            <x-icon name="alert-circle" class="w-3 h-3 stroke-[2.5]" /> Belum Hadir
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-lexend font-bold text-[10px] uppercase tracking-wider border border-rose-200/50 dark:border-rose-800/50">

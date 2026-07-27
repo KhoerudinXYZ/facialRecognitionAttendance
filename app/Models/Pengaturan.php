@@ -14,6 +14,7 @@ class Pengaturan extends Model
         'jam_masuk',
         'batas_terlambat',
         'mulai_pulang',
+        'jam_cek_belum_hadir',
         'simulasi_waktu',
         'lokasi_lat',
         'lokasi_lng',
@@ -79,5 +80,15 @@ class Pengaturan extends Model
     public function liburMingguan(): array
     {
         return $this->hari_libur_mingguan ?? [];
+    }
+
+    /**
+     * True kalau notifikasi peringatan dini "belum hadir" aktif — sama
+     * seperti lokasiAktif(), presensi nilai jamnya sendiri yang jadi
+     * penanda aktif/nonaktif, tidak ada toggle terpisah.
+     */
+    public function cekBelumHadirAktif(): bool
+    {
+        return $this->jam_cek_belum_hadir !== null;
     }
 }
