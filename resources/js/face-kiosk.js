@@ -109,7 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // ulang, bukan masalah izin browser yang butuh reload.
             if (err.code === err.PERMISSION_DENIED) {
                 geoStatus = 'denied';
-                setStatus('Izin lokasi ditolak. Aktifkan izin lokasi di browser lalu muat ulang halaman.');
+                setStatusIzinDitolak(
+                    'Izin lokasi diblokir.\nKetuk ikon gembok/info di sebelah alamat website (atas layar), ' +
+                    'pilih "Izin Situs" atau "Site Settings", aktifkan Lokasi, lalu tekan Coba Lagi di bawah.'
+                );
                 return;
             }
 
@@ -121,6 +124,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setStatus(msg) {
         statusEl.textContent = msg;
+    }
+
+    // Beda dari setStatus() biasa: dipakai khusus saat izin kamera/lokasi
+    // sudah TERLANJUR ditolak siswa. Begitu ditolak sekali, browser tidak
+    // akan pernah menampilkan popup izin lagi secara otomatis (ini memang
+    // sengaja dibuat begitu oleh semua browser, bukan sesuatu yang bisa
+    // dipaksa lewat kode) -- jadi satu-satunya jalan siswa yang tidak
+    // paham teknis bisa lanjut adalah instruksi jelas + tombol nyata,
+    // bukan pesan error mentah yang tidak actionable.
+    const retryBtn = document.getElementById('kiosk-retry-btn');
+    function setStatusIzinDitolak(msg) {
+        setStatus(msg);
+        retryBtn?.classList.remove('hidden');
+        retryBtn?.classList.add('flex');
     }
 
     function setVisualState(state) {
@@ -410,8 +427,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setStatus('Menyalakan kamera…');
             requestLocation();
-            cameraStream = await startCamera(video, currentFacingMode);
-            
+            try {
+                cameraStream = await startCamera(video, currentFacingMode);
+            } catch (camErr) {
+                if (camErr.name === 'NotAllowedError' || camErr.name === 'PermissionDeniedError') {
+                    setStatusIzinDitolak(
+                        'Izin kamera diblokir.\nKetuk ikon gembok/info di sebelah alamat website (atas layar), ' +
+                        'pilih "Izin Situs" atau "Site Settings", aktifkan Kamera, lalu tekan Coba Lagi di bawah.'
+                    );
+                    return;
+                }
+                if (camErr.name === 'NotFoundError' || camErr.name === 'DevicesNotFoundError') {
+                    setStatus('Tidak ada kamera terdeteksi di HP ini. Hubungi wali kelas untuk absen manual.');
+                    return;
+                }
+                if (camErr.name === 'NotReadableError' || camErr.name === 'TrackStartError') {
+                    setStatusIzinDitolak('Kamera sedang dipakai aplikasi lain. Tutup aplikasi kamera/video call lain, lalu tekan Coba Lagi.');
+                    return;
+                }
+                throw camErr;
+            }
+
             if (switchCameraBtn) {
                 switchCameraBtn.addEventListener('click', async () => {
                     switchCameraBtn.classList.add('opacity-50', 'pointer-events-none');

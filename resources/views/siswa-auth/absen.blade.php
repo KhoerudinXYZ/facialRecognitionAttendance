@@ -76,9 +76,13 @@
                     Akses Kamera Dinonaktifkan
                 </p>
             @else
-                <p id="kiosk-status" class="text-sm font-black font-lexend text-indigo-700 dark:text-indigo-300 text-center min-h-[3rem] bg-indigo-50/80 dark:bg-indigo-900/40 py-3 px-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 shadow-inner backdrop-blur-sm transition-all duration-300">
+                <p id="kiosk-status" class="text-sm font-black font-lexend text-indigo-700 dark:text-indigo-300 text-center min-h-[3rem] bg-indigo-50/80 dark:bg-indigo-900/40 py-3 px-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 shadow-inner backdrop-blur-sm transition-all duration-300 whitespace-pre-line">
                     Menyiapkan kamera pemindai…
                 </p>
+                <button type="button" id="kiosk-retry-btn" onclick="window.location.reload()"
+                        class="hidden w-full items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-black font-lexend text-sm uppercase tracking-wider shadow-lg shadow-indigo-500/20 transition-all duration-300 transform active:scale-95">
+                    <x-icon name="refresh-cw" class="w-4 h-4 stroke-[2.5]" /> Coba Lagi
+                </button>
             @endif
         </div>
 
