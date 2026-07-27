@@ -6,9 +6,8 @@ use App\Models\Absensi;
 use App\Models\AbsensiAuditLog;
 use App\Models\HariLibur;
 use App\Models\Kelas;
-use App\Models\Pengaturan;
 use App\Models\Siswa;
-use Illuminate\Database\UniqueConstraintViolationException;
+use App\Services\AbsensiManualWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -59,7 +58,7 @@ class AbsensiController extends Controller
     /**
      * Input / ubah absensi manual (izin, sakit, alpha, hadir).
      */
-    public function manual(Request $request): RedirectResponse
+    public function manual(Request $request, AbsensiManualWriter $writer): RedirectResponse
     {
         $validated = $request->validate([
             'siswa_id' => ['required', 'exists:siswa,id'],
@@ -70,73 +69,10 @@ class AbsensiController extends Controller
 
         $siswa = Siswa::visibleTo($request->user())->findOrFail($validated['siswa_id']);
         $this->authorize('create', [Absensi::class, $siswa]);
-        $validated['siswa_id'] = $siswa->id;
 
-        $this->tulisAbsensiManual($siswa, $validated);
+        $writer->tulis($siswa, $validated['tanggal'], $validated['status'], $validated['keterangan'] ?? null);
 
         return back()->with('success', 'Absensi manual disimpan.');
-    }
-
-    /**
-     * $percobaanKedua cuma kepakai kalau INSERT kita sendiri tabrakan
-     * constraint unik siswa+tanggal karena race dengan penulisan lain
-     * (mis. AbsensiRecorder yang tepat saat itu memproses scan wajah siswa
-     * yang sama) -- re-fetch baris yang barusan menang race itu lalu
-     * terapkan koreksi manual ini ke situ. Koreksi admin TETAP harus
-     * tersimpan, tidak boleh gagal cuma karena kalah race.
-     */
-    private function tulisAbsensiManual(Siswa $siswa, array $validated, bool $percobaanKedua = false): void
-    {
-        // Status non-hadir (izin/sakit/alpha) tidak boleh menyisakan jam
-        // masuk/pulang dari baris sebelumnya -- kalau tidak, koreksi manual
-        // hari yang sudah lengkap (mis. hadir -> sakit setelah surat dokter
-        // menyusul) bisa meninggalkan jam_pulang lama nempel di baris sakit.
-        $statusHadir = in_array($validated['status'], ['hadir', 'terlambat'], true);
-
-        // whereDate(), bukan firstOrNew(['tanggal' => ...]) langsung: kolom
-        // tanggal tersimpan sebagai datetime penuh ("Y-m-d H:i:s"), sedangkan
-        // $validated['tanggal'] dari form cuma string "Y-m-d" mentah (beda
-        // dari PengajuanIzinController yang selalu pakai objek Carbon dari
-        // atribut model ter-cast). Pencarian exact-match dengan string mentah
-        // itu tidak akan pernah ketemu baris yang sudah ada, jadi berakhir
-        // coba INSERT baris baru dan gagal kena constraint unik siswa+tanggal.
-        $absensi = Absensi::where('siswa_id', $validated['siswa_id'])
-            ->whereDate('tanggal', $validated['tanggal'])
-            ->first();
-
-        // kelas_id cuma di-stamp untuk baris BARU -- baris yang sudah ada
-        // menyimpan snapshot kelas siswa pada tanggal itu (lihat migration
-        // add_kelas_id_to_absensi), jangan ditimpa jadi kelas siswa SEKARANG
-        // cuma karena admin sedang mengoreksi status hari itu.
-        if (! $absensi) {
-            $absensi = new Absensi([
-                'siswa_id' => $validated['siswa_id'],
-                'kelas_id' => $siswa->kelas_id,
-                'tanggal' => $validated['tanggal'],
-            ]);
-        }
-
-        $absensi->status = $validated['status'];
-        $absensi->metode = 'manual';
-        $absensi->keterangan = $validated['keterangan'] ?? null;
-        // Pengaturan::sekarang() (bukan Carbon::now() langsung) supaya ikut
-        // menghormati simulasi_waktu, konsisten dengan seluruh alur absensi
-        // lain -- lihat catatan di Pengaturan::waktuSekarang().
-        $absensi->jam_masuk = $statusHadir ? Pengaturan::sekarang()->format('H:i:s') : null;
-
-        if (! $statusHadir) {
-            $absensi->jam_pulang = null;
-        }
-
-        try {
-            $absensi->save();
-        } catch (UniqueConstraintViolationException $e) {
-            if ($percobaanKedua) {
-                throw $e;
-            }
-
-            $this->tulisAbsensiManual($siswa, $validated, percobaanKedua: true);
-        }
     }
 
     /**

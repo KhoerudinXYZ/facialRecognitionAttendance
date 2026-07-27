@@ -163,6 +163,16 @@ class SiswaAbsensiController extends Controller
             ->get()
             ->reject(fn ($h) => $tanggalAbsen->contains($h->tanggal->toDateString()));
 
+        // Dipakai buat menampilkan status "sudah diajukan" per tanggal di
+        // view, supaya siswa tidak coba ajukan koreksi dobel buat tanggal
+        // yang sama (validasi asli tetap di SiswaKoreksiAbsensiController,
+        // ini cuma buat UX-nya).
+        $koreksiBulanIni = $siswa->koreksiAbsensi()
+            ->whereYear('tanggal', $bulan->year)
+            ->whereMonth('tanggal', $bulan->month)
+            ->get()
+            ->keyBy(fn ($k) => $k->tanggal->toDateString());
+
         $riwayatGabungan = $riwayat->map(fn ($a) => ['tanggal' => $a->tanggal, 'absensi' => $a, 'libur' => null])
             ->concat($liburBulanIni->map(fn ($h) => ['tanggal' => $h->tanggal, 'absensi' => null, 'libur' => $h]))
             ->sortByDesc(fn ($item) => $item['tanggal'])
@@ -170,6 +180,6 @@ class SiswaAbsensiController extends Controller
 
         $today = Pengaturan::sekarang();
 
-        return view('siswa-auth.riwayat', compact('siswa', 'riwayatGabungan', 'bulan', 'statistik', 'today'));
+        return view('siswa-auth.riwayat', compact('siswa', 'riwayatGabungan', 'bulan', 'statistik', 'today', 'koreksiBulanIni'));
     }
 }

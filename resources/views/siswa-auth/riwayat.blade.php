@@ -4,6 +4,7 @@
         $bulanSebelum = $bulan->copy()->subMonth();
         $bulanSetelah = $bulan->copy()->addMonth();
         $bisaMaju = $bulanSetelah->lte($today->copy()->startOfMonth());
+        $statusKoreksiOptions = ['hadir' => 'Hadir', 'terlambat' => 'Terlambat', 'izin' => 'Izin', 'sakit' => 'Sakit'];
     @endphp
 
     <div class="space-y-6">
@@ -170,11 +171,52 @@
                                 </div>
                             </div>
                             
-                            <!-- Status Badge -->
-                            <div class="shrink-0 flex sm:justify-end">
+                            <!-- Status Badge + Koreksi -->
+                            <div class="shrink-0 flex flex-col sm:items-end gap-2">
                                 <span class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-lg border {{ $badgeClass }}">
                                     {{ $status }}
                                 </span>
+
+                                @if (! $isLibur)
+                                    @php $koreksi = $koreksiBulanIni->get($item['tanggal']->toDateString()); @endphp
+                                    @if ($koreksi && in_array($koreksi->status, ['menunggu', 'disetujui'], true))
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-black font-lexend uppercase tracking-widest {{ $koreksi->status === 'menunggu' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                            <x-icon name="alert-circle" class="w-3 h-3 stroke-[2.5]" />
+                                            Koreksi {{ $koreksi->status === 'menunggu' ? 'Menunggu' : 'Disetujui' }}
+                                        </span>
+                                    @else
+                                        <x-confirm-form :action="route('siswa.koreksi.store')" method="POST" enctype="multipart/form-data"
+                                                         title="Laporkan koreksi absensi {{ $item['tanggal']->translatedFormat('d F Y') }}?"
+                                                         message="Status tercatat saat ini: {{ $status }}. Jelaskan status yang seharusnya benar -- wali kelas akan meninjau sebelum baris ini diperbarui."
+                                                         confirm-label="Kirim" :danger="false"
+                                                         trigger-class="text-[10px] font-black font-lexend uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline decoration-dotted">
+                                            <x-slot:fields>
+                                                <input type="hidden" name="tanggal" value="{{ $item['tanggal']->toDateString() }}" />
+                                                <div>
+                                                    <label class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Seharusnya</label>
+                                                    <select name="status_diminta" class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 px-4 py-2.5">
+                                                        @foreach ($statusKoreksiOptions as $val => $label)
+                                                            @if ($val !== $status)
+                                                                <option value="{{ $val }}">{{ $label }}</option>
+                                                            @endif
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Alasan</label>
+                                                    <input type="text" name="alasan" required maxlength="255"
+                                                           class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 px-4 py-2.5" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Bukti (opsional)</label>
+                                                    <input type="file" name="bukti" accept="image/*"
+                                                           class="block w-full text-sm text-slate-600 dark:text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-600 dark:file:bg-indigo-900/30 dark:file:text-indigo-400" />
+                                                </div>
+                                            </x-slot:fields>
+                                            <x-icon name="alert-circle" class="w-3 h-3 stroke-[2.5]" /> Laporkan Koreksi
+                                        </x-confirm-form>
+                                    @endif
+                                @endif
                             </div>
                         </div>
                     @endforeach

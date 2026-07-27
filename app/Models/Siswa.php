@@ -56,6 +56,11 @@ class Siswa extends Authenticatable
         return $this->hasMany(PengajuanIzin::class, 'siswa_id');
     }
 
+    public function koreksiAbsensi(): HasMany
+    {
+        return $this->hasMany(KoreksiAbsensi::class, 'siswa_id');
+    }
+
     public function isEnrolled(): bool
     {
         return $this->faceDescriptors()->exists();

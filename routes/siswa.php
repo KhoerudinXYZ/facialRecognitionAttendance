@@ -3,6 +3,7 @@
 use App\Http\Controllers\SiswaAuth\SiswaAbsensiController;
 use App\Http\Controllers\SiswaAuth\SiswaDashboardController;
 use App\Http\Controllers\SiswaAuth\SiswaFaceEnrollmentController;
+use App\Http\Controllers\SiswaAuth\SiswaKoreksiAbsensiController;
 use App\Http\Controllers\SiswaAuth\SiswaNewPasswordController;
 use App\Http\Controllers\SiswaAuth\SiswaPasswordController;
 use App\Http\Controllers\SiswaAuth\SiswaPasswordResetLinkController;
@@ -45,6 +46,8 @@ Route::prefix('portal')->name('siswa.')->group(function () {
         Route::get('absen', [SiswaAbsensiController::class, 'create'])->name('absen');
         Route::post('absen', [SiswaAbsensiController::class, 'store'])->name('absen.store');
         Route::get('riwayat', [SiswaAbsensiController::class, 'riwayat'])->name('riwayat');
+
+        Route::post('koreksi', [SiswaKoreksiAbsensiController::class, 'store'])->name('koreksi.store');
 
         Route::get('izin', [SiswaPengajuanIzinController::class, 'create'])->name('izin');
         Route::post('izin', [SiswaPengajuanIzinController::class, 'store'])->name('izin.store');

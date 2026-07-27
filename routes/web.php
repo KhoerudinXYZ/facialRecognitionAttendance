@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FaceEnrollmentController;
 use App\Http\Controllers\HariLiburController;
 use App\Http\Controllers\KelasController;
+use App\Http\Controllers\KoreksiAbsensiController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\NotifikasiAbsensiController;
 use App\Http\Controllers\PengajuanIzinController;
@@ -68,6 +69,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('pengajuan-izin', [PengajuanIzinController::class, 'index'])->name('pengajuan-izin.index');
     Route::post('pengajuan-izin/{pengajuanIzin}/approve', [PengajuanIzinController::class, 'approve'])->name('pengajuan-izin.approve');
     Route::post('pengajuan-izin/{pengajuanIzin}/reject', [PengajuanIzinController::class, 'reject'])->name('pengajuan-izin.reject');
+
+    // Pengajuan koreksi absensi mandiri siswa (approval admin/wali kelas)
+    Route::get('koreksi-absensi', [KoreksiAbsensiController::class, 'index'])->name('koreksi-absensi.index');
+    Route::post('koreksi-absensi/{koreksiAbsensi}/approve', [KoreksiAbsensiController::class, 'approve'])->name('koreksi-absensi.approve');
+    Route::post('koreksi-absensi/{koreksiAbsensi}/reject', [KoreksiAbsensiController::class, 'reject'])->name('koreksi-absensi.reject');
 
     // Laporan
     Route::get('laporan', [LaporanController::class, 'index'])->name('laporan.index');

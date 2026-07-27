@@ -7,6 +7,7 @@
     'triggerClass' => 'inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline',
     'fields' => null,
     'danger' => true,
+    'enctype' => null,
 ])
 
 <div x-data="{ open: false }" class="inline">
@@ -32,7 +33,7 @@
                     <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ $message }}</p>
                 @endif
 
-                <form action="{{ $action }}" method="POST" class="mt-6 space-y-4">
+                <form action="{{ $action }}" method="POST" class="mt-6 space-y-4" @if ($enctype) enctype="{{ $enctype }}" @endif>
                     @csrf
                     @if (strtoupper($method) !== 'POST')
                         @method($method)
