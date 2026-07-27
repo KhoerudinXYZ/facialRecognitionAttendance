@@ -53,6 +53,12 @@ dikerjakan malam itu:
     sebelumnya tidak pernah benar-benar terkirim, tidak ada proses yang
     memprosesnya), checklist rencana deploy ke Railway, dan beberapa
     hardening kecil lain (`SESSION_SECURE_COOKIE`, dll).
+12. **Pesan izin kamera/lokasi yang ditolak jadi jelas & actionable** — di
+    halaman absen mandiri maupun daftar wajah: sebelumnya kalau siswa
+    terlanjur menolak izin kamera/lokasi, cuma muncul pesan error mentah
+    tanpa ada cara jelas buat lanjut (browser tidak pernah menampilkan
+    ulang popup izin secara otomatis setelah ditolak). Sekarang muncul
+    instruksi langkah-demi-langkah + tombol "Coba Lagi".
 
 ---
 

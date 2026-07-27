@@ -55,7 +55,12 @@
                 </div>
             </div>
 
-            <p id="enroll-status" class="text-sm text-gray-700 dark:text-gray-300 min-h-5">Menyiapkan…</p>
+            <p id="enroll-status" class="text-sm text-gray-700 dark:text-gray-300 min-h-5 whitespace-pre-line">Menyiapkan…</p>
+
+            <button type="button" id="enroll-retry-btn" onclick="window.location.reload()"
+                    class="hidden items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium">
+                Coba Lagi
+            </button>
 
             <div class="flex flex-wrap gap-3">
                 <button id="enroll-capture" disabled

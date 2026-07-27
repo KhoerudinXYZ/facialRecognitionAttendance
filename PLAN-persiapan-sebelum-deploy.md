@@ -21,6 +21,12 @@ Automated test menjamin LOGIKA-nya benar, bukan bahwa UI-nya benar-benar
 bisa dipakai. Coba manual, idealnya dari HP asli (bukan cuma desktop
 Chrome devtools), untuk:
 
+- [ ] **Pesan izin kamera/lokasi ditolak** (baru dikerjakan): di
+      `/portal/enroll` dan `/portal/absen`, coba sengaja tolak izin
+      kamera/lokasi di browser HP, pastikan muncul instruksi jelas +
+      tombol "Coba Lagi" (bukan pesan error mentah), lalu perbaiki
+      izinnya manual di pengaturan browser dan pastikan tombol Coba Lagi
+      benar-benar bikin alurnya lanjut normal.
 - [ ] **Absen mandiri end-to-end**: buka `/portal/absen`, scan wajah
       sungguhan, cek liveness (kedip) kepakai, cek GPS diminta & diproses
       (kalau di lokasi asli sekolah/rumah, harus BERHASIL -- kalau perlu,

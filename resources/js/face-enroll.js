@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const captureBtn = document.getElementById('enroll-capture');
     const saveBtn = document.getElementById('enroll-save');
     const progressBar = document.getElementById('enroll-progress');
+    const retryBtn = document.getElementById('enroll-retry-btn');
 
     const storeUrl = root.dataset.storeUrl;
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
@@ -21,6 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setStatus(msg) {
         statusEl.textContent = msg;
+    }
+
+    // Beda dari setStatus() biasa: dipakai khusus saat izin kamera sudah
+    // TERLANJUR ditolak siswa. Begitu ditolak sekali, browser tidak akan
+    // pernah menampilkan popup izin lagi secara otomatis (sengaja dibuat
+    // begitu oleh semua browser, bukan sesuatu yang bisa dipaksa lewat
+    // kode) -- jadi satu-satunya jalan siswa yang tidak paham teknis bisa
+    // lanjut adalah instruksi jelas + tombol nyata, bukan pesan error
+    // mentah yang tidak actionable. Sama seperti face-kiosk.js.
+    function setStatusIzinDitolak(msg) {
+        setStatus(msg);
+        retryBtn?.classList.remove('hidden');
+        retryBtn?.classList.add('flex');
     }
 
     function updateCount() {
@@ -38,7 +52,26 @@ document.addEventListener('DOMContentLoaded', () => {
             setStatus('Memuat model pengenalan wajah…');
             await loadModels();
             setStatus('Menyalakan kamera…');
-            stream = await startCamera(video);
+            try {
+                stream = await startCamera(video);
+            } catch (camErr) {
+                if (camErr.name === 'NotAllowedError' || camErr.name === 'PermissionDeniedError') {
+                    setStatusIzinDitolak(
+                        'Izin kamera diblokir.\nKetuk ikon gembok/info di sebelah alamat website (atas layar), ' +
+                        'pilih "Izin Situs" atau "Site Settings", aktifkan Kamera, lalu tekan Coba Lagi di bawah.'
+                    );
+                    return;
+                }
+                if (camErr.name === 'NotFoundError' || camErr.name === 'DevicesNotFoundError') {
+                    setStatus('Tidak ada kamera terdeteksi di perangkat ini.');
+                    return;
+                }
+                if (camErr.name === 'NotReadableError' || camErr.name === 'TrackStartError') {
+                    setStatusIzinDitolak('Kamera sedang dipakai aplikasi lain. Tutup aplikasi kamera/video call lain, lalu tekan Coba Lagi.');
+                    return;
+                }
+                throw camErr;
+            }
             setStatus('Arahkan wajah ke kamera lalu klik "Ambil Sampel".');
             captureBtn.disabled = false;
         } catch (e) {
