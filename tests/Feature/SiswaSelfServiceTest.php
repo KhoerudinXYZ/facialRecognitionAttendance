@@ -211,6 +211,27 @@ class SiswaSelfServiceTest extends TestCase
         $this->assertEquals(0, Absensi::where('siswa_id', $siswa->id)->count());
     }
 
+    public function test_siswa_absen_mandiri_ditolak_kalau_dua_pembacaan_gps_identik_persis(): void
+    {
+        Pengaturan::get()->update(['lokasi_lat' => '-6.9147000', 'lokasi_lng' => '107.6098000', 'lokasi_radius_meter' => 100]);
+        Carbon::setTestNow('2026-07-13 07:00:00');
+
+        $siswa = $this->siswaBelumRegistrasi();
+        $this->registrasikanAkun($siswa, 'budi01', 'password123');
+        $siswa->faceDescriptors()->create(['descriptor' => array_fill(0, 128, 0.1)]);
+        $this->actingAs($siswa, 'siswa');
+
+        // Payload persis seperti yang dikirim face-kiosk.js kalau dua
+        // pembacaan GPS berturut-turut identik (indikasi fake-GPS statis).
+        $this->postJson('/portal/absen', [
+            'lat' => -6.9147000, 'lng' => 107.6098000,
+            'lat_awal' => -6.9147000, 'lng_awal' => 107.6098000,
+            'liveness_verified' => true,
+        ])->assertOk()->assertJsonPath('status', 'lokasi');
+
+        $this->assertEquals(0, Absensi::where('siswa_id', $siswa->id)->count());
+    }
+
     public function test_siswa_yang_sakit_hari_ini_tidak_bisa_buka_kamera_dan_dashboard_tidak_menampilkan_masuk_tercentang(): void
     {
         Carbon::setTestNow('2026-07-13 08:00:00');

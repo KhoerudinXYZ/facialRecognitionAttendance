@@ -27,9 +27,20 @@ class AbsensiRecorder
      * $lat/$lng hanya dipakai kalau Pengaturan::lokasiAktif() — kiosk admin
      * (AbsensiController) tidak pernah mengirimnya karena kameranya memang
      * di sekolah, jadi parameter ini opsional & backward compatible.
+     *
+     * $accuracy/$latAwal/$lngAwal: sinyal tambahan anti-spoofing GPS (lihat
+     * cekLokasi()) — juga opsional, browser lama/tidak mendukung dua kali
+     * baca posisi tetap bisa mengirim $lat/$lng saja.
      */
-    public function record(Siswa $siswa, ?float $lat = null, ?float $lng = null, bool $livenessVerified = true): array
-    {
+    public function record(
+        Siswa $siswa,
+        ?float $lat = null,
+        ?float $lng = null,
+        bool $livenessVerified = true,
+        ?float $accuracy = null,
+        ?float $latAwal = null,
+        ?float $lngAwal = null,
+    ): array {
         $pengaturan = Pengaturan::get();
 
         // Pengaturan::simulasi_waktu: field testing-only, boleh dihapus
@@ -97,7 +108,7 @@ class AbsensiRecorder
         }
 
         if (! $existing || $existing->status === 'alpha') {
-            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng)) {
+            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy, $latAwal, $lngAwal)) {
                 return $tolakLokasi;
             }
 
@@ -164,7 +175,7 @@ class AbsensiRecorder
                 // Izin disetujui — lanjutkan ke pencatatan jam_pulang
             }
 
-            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng)) {
+            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy, $latAwal, $lngAwal)) {
                 return $tolakLokasi;
             }
 
@@ -265,7 +276,14 @@ class AbsensiRecorder
      * supaya cek libur & cek "sudah absen" tetap menang duluan, jadi
      * siswa yang memang sudah kelar absen dapat pesan yang benar.
      */
-    private function cekLokasi(Pengaturan $pengaturan, Siswa $siswa, ?float $lat, ?float $lng): ?array
+    /**
+     * Batas akurasi GPS -- lihat blok $accuracy di bawah. Nilai absolut
+     * (bukan relatif ke lokasi_radius_meter) supaya tidak bergantung pada
+     * seberapa longgar admin mengatur radius sekolah.
+     */
+    private const AKURASI_MAKS_METER = 150;
+
+    private function cekLokasi(Pengaturan $pengaturan, Siswa $siswa, ?float $lat, ?float $lng, ?float $accuracy = null, ?float $latAwal = null, ?float $lngAwal = null): ?array
     {
         if (! $pengaturan->lokasiAktif()) {
             return null;
@@ -275,6 +293,34 @@ class AbsensiRecorder
             return [
                 'status' => 'lokasi',
                 'message' => 'Lokasi GPS tidak terdeteksi. Aktifkan izin lokasi lalu coba lagi.',
+                'nama' => $siswa->nama,
+            ];
+        }
+
+        // Sinyal anti-spoofing #1: kalau device sendiri bilang "saya tidak
+        // yakin posisi saya, bisa meleset sekian ratus meter", pengecekan
+        // radius di bawah jadi tidak berarti sama sekali -- laporan lat/lng
+        // sendiri "benar" cuma alamat-nya nyaris tidak diketahui.
+        if ($accuracy !== null && $accuracy > self::AKURASI_MAKS_METER) {
+            return [
+                'status' => 'lokasi',
+                'message' => 'Sinyal GPS kurang akurat. Coba lagi di tempat terbuka (bukan dalam ruangan/basement).',
+                'nama' => $siswa->nama,
+            ];
+        }
+
+        // Sinyal anti-spoofing #2: dua pembacaan GPS asli (lihat
+        // face-kiosk.js::requestLocation()) hampir tidak pernah identik
+        // persis sampai digit terakhir -- noise sensor selalu ada. App
+        // fake-GPS murahan yang menyuntik satu koordinat statis biasanya
+        // justru mengembalikan angka yang SAMA PERSIS di kedua pembacaan.
+        // Sengaja exact-match (bukan "mirip"), bukan fuzzy threshold --
+        // GPS asli yang goyangannya kebetulan kecil tidak akan kena, cuma
+        // yang benar-benar tidak goyang sama sekali yang ketangkap di sini.
+        if ($latAwal !== null && $lngAwal !== null && $latAwal === $lat && $lngAwal === $lng) {
+            return [
+                'status' => 'lokasi',
+                'message' => 'Lokasi GPS tidak wajar (pembacaan tidak berubah). Coba lagi.',
                 'nama' => $siswa->nama,
             ];
         }

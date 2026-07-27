@@ -128,10 +128,21 @@ class SiswaAbsensiController extends Controller
         $data = $request->validate([
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'accuracy' => ['nullable', 'numeric', 'min:0'],
+            'lat_awal' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng_awal' => ['nullable', 'numeric', 'between:-180,180'],
             'liveness_verified' => ['required', 'accepted'],
         ]);
 
-        return response()->json($recorder->record($siswa, $data['lat'] ?? null, $data['lng'] ?? null, true));
+        return response()->json($recorder->record(
+            $siswa,
+            $data['lat'] ?? null,
+            $data['lng'] ?? null,
+            true,
+            $data['accuracy'] ?? null,
+            $data['lat_awal'] ?? null,
+            $data['lng_awal'] ?? null,
+        ));
     }
 
     public function riwayat(Request $request): View
