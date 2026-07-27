@@ -19,7 +19,39 @@
                    class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-300 shadow-sm border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800">
                     <x-icon name="arrow-left" class="w-4 h-4 stroke-[2.5]" />
                 </a>
-                <span class="font-black text-slate-800 dark:text-slate-100 font-lexend text-base uppercase tracking-wider min-w-[140px] text-center">{{ $namaBulan[$bulan->month - 1] }} {{ $bulan->year }}</span>
+                <div class="relative min-w-[140px] text-center">
+                    {{-- Dropdown bulan + tahun sendiri (bukan input type="date"/
+                         "month" bawaan browser) -- kita cuma butuh bulan & tahun,
+                         tidak ada gunanya nampilkan pemilihan tanggal, dan dukungan
+                         type="month" sendiri tidak merata antar browser (Firefox &
+                         Safari memperlakukannya sebagai kotak teks biasa tanpa
+                         popup). <select> berperilaku identik di semua browser. --}}
+                    <button type="button" onclick="document.getElementById('bulan-picker').classList.toggle('hidden')"
+                            class="font-black text-slate-800 dark:text-slate-100 font-lexend text-base uppercase tracking-wider hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                        {{ $namaBulan[$bulan->month - 1] }} {{ $bulan->year }}
+                    </button>
+                    <div id="bulan-picker" class="hidden absolute top-full left-1/2 -translate-x-1/2 mt-2 z-20 flex gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+                        <select id="pilih-bulan" onchange="lompatKeBulan()"
+                                class="rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm focus:border-indigo-500 focus:ring-indigo-500/30 py-1.5">
+                            @foreach ($namaBulan as $i => $nama)
+                                <option value="{{ $i + 1 }}" @selected($bulan->month === $i + 1)>{{ $nama }}</option>
+                            @endforeach
+                        </select>
+                        <select id="pilih-tahun" onchange="lompatKeBulan()"
+                                class="rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm focus:border-indigo-500 focus:ring-indigo-500/30 py-1.5">
+                            @for ($tahun = $today->year; $tahun >= $today->year - 3; $tahun--)
+                                <option value="{{ $tahun }}" @selected($bulan->year === $tahun)>{{ $tahun }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                    <script>
+                        function lompatKeBulan() {
+                            const bulan = document.getElementById('pilih-bulan').value.padStart(2, '0');
+                            const tahun = document.getElementById('pilih-tahun').value;
+                            window.location.href = '{{ route('siswa.riwayat') }}?bulan=' + tahun + '-' + bulan;
+                        }
+                    </script>
+                </div>
                 @if ($bisaMaju)
                     <a href="{{ route('siswa.riwayat', ['bulan' => $bulanSetelah->format('Y-m')]) }}"
                        class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-300 shadow-sm border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800">

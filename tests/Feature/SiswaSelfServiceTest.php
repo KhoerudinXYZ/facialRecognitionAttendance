@@ -211,4 +211,20 @@ class SiswaSelfServiceTest extends TestCase
 
         $this->assertEquals(1, FaceDescriptor::where('siswa_id', $siswa->id)->count());
     }
+
+    public function test_siswa_bisa_loncat_ke_bulan_tertentu_di_halaman_riwayat(): void
+    {
+        $siswa = $this->siswaBelumRegistrasi();
+        $this->registrasikanAkun($siswa, 'budi01', 'password123');
+        $this->actingAs($siswa, 'siswa');
+
+        $this->get('/portal/riwayat')
+            ->assertOk()
+            ->assertSee('id="pilih-bulan"', false)
+            ->assertSee('id="pilih-tahun"', false);
+
+        $this->get('/portal/riwayat?bulan=2026-05')
+            ->assertOk()
+            ->assertSee('Mei 2026');
+    }
 }
