@@ -57,7 +57,7 @@ class AbsensiAlphaCheckerTest extends TestCase
             'kontak' => 'ortu@example.com',
             'status' => 'terkirim',
         ]);
-        Mail::assertSent(SiswaAlphaMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
+        Mail::assertQueued(SiswaAlphaMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
     }
 
     public function test_siswa_alpha_dinotifikasi_whatsapp_kalau_fonnte_aktif(): void
@@ -81,6 +81,53 @@ class AbsensiAlphaCheckerTest extends TestCase
             && $request['target'] === '6281234567890');
     }
 
+    public function test_whatsapp_dicoba_ulang_kalau_gagal_sesaat_lalu_berhasil(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        // Percobaan pertama gagal (device Fonnte lagi bermasalah sesaat),
+        // percobaan kedua berhasil -- WhatsAppNotifier::kirim() harus
+        // mencoba ulang otomatis, bukan langsung menyerah di percobaan
+        // pertama.
+        Http::fake(['api.fonnte.com/*' => Http::sequence()
+            ->push(['status' => false, 'reason' => 'device offline'], 500)
+            ->push(['status' => true], 200)]);
+        Carbon::setTestNow('2026-07-13 20:00:00');
+        $siswa = $this->siswa(['no_hp_orang_tua' => '081234567890']);
+
+        app(AbsensiAlphaChecker::class)->jalankan();
+
+        Http::assertSentCount(2);
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'kanal' => 'whatsapp',
+            'status' => 'terkirim',
+        ]);
+    }
+
+    public function test_whatsapp_dicatat_gagal_setelah_semua_percobaan_ulang_habis(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        Http::fake(['api.fonnte.com/*' => Http::response(['status' => false, 'reason' => 'device offline'], 500)]);
+        Carbon::setTestNow('2026-07-13 20:00:00');
+        $siswa = $this->siswa(['no_hp_orang_tua' => '081234567890']);
+
+        app(AbsensiAlphaChecker::class)->jalankan();
+
+        // retry(3, ...) di WhatsAppNotifier::kirim() -- $times di situ
+        // total percobaan (1 awal + 2 ulang), bukan jumlah ulangan
+        // tambahan.
+        Http::assertSentCount(3);
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'kanal' => 'whatsapp',
+            'status' => 'gagal',
+        ]);
+    }
+
     public function test_siswa_tanpa_email_orang_tua_tetap_ditandai_alpha_tapi_notifikasi_dicatat_tidak_ada_kontak(): void
     {
         Mail::fake();
@@ -95,7 +142,7 @@ class AbsensiAlphaCheckerTest extends TestCase
             'kontak' => null,
             'status' => 'tidak_ada_kontak',
         ]);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_siswa_yang_sudah_absen_tidak_ditandai_alpha(): void
@@ -116,7 +163,7 @@ class AbsensiAlphaCheckerTest extends TestCase
         $this->assertSame(0, $jumlah);
         $this->assertSame(1, Absensi::where('siswa_id', $siswa->id)->count());
         $this->assertDatabaseMissing('notifikasi_absensi_log', ['siswa_id' => $siswa->id]);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_tidak_menandai_alpha_saat_hari_libur(): void
@@ -130,7 +177,7 @@ class AbsensiAlphaCheckerTest extends TestCase
 
         $this->assertSame(0, $jumlah);
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_siswa_nonaktif_tidak_ditandai_alpha(): void
@@ -154,7 +201,7 @@ class AbsensiAlphaCheckerTest extends TestCase
 
         $this->assertSame(0, $jumlah);
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_menandai_alpha_tepat_saat_mulai_pulang(): void
@@ -190,7 +237,7 @@ class AbsensiAlphaCheckerTest extends TestCase
 
         $this->assertSame(0, $jumlah);
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_siswa_dengan_pengajuan_izin_ditolak_tetap_ditandai_alpha(): void
@@ -233,7 +280,7 @@ class AbsensiAlphaCheckerTest extends TestCase
             'kanal' => 'whatsapp',
             'status' => 'terkirim',
         ]);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_email_tetap_terkirim_kalau_siswa_tidak_punya_nomor_wa_walau_kanal_wa_aktif(): void
@@ -246,7 +293,7 @@ class AbsensiAlphaCheckerTest extends TestCase
 
         app(AbsensiAlphaChecker::class)->jalankan();
 
-        Mail::assertSent(SiswaAlphaMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
+        Mail::assertQueued(SiswaAlphaMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
         $this->assertDatabaseHas('notifikasi_absensi_log', [
             'siswa_id' => $siswa->id,
             'jenis' => 'alpha',

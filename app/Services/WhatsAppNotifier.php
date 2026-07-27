@@ -73,8 +73,17 @@ class WhatsAppNotifier
     private function kirim(string $token, string $nomor, string $pesan): bool
     {
         try {
+            // retry(3, 500): 3 percobaan total (1 awal + 2 ulang), jeda
+            // 500ms -- dipanggil sinkron di tengah request absen siswa
+            // (lihat AbsensiRecorder::notifikasiKehadiran()), jadi sengaja
+            // pendek (maks ~1 detik tambahan) supaya tidak bikin siswa
+            // nunggu lama cuma buat menangani gangguan sesaat (device
+            // Fonnte lagi sibuk sepersekian detik, bukan benar-benar down
+            // berkepanjangan). Laravel retry($times,...): $times itu total
+            // percobaan, bukan jumlah ulangan tambahan.
             $response = Http::withHeaders(['Authorization' => $token])
                 ->asForm()
+                ->retry(3, 500, throw: false)
                 ->post('https://api.fonnte.com/send', [
                     'target' => $nomor,
                     'message' => $pesan,

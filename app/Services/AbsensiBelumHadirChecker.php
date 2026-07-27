@@ -102,7 +102,13 @@ class AbsensiBelumHadirChecker
         }
 
         try {
-            Mail::to($siswa->email_orang_tua)->send(new SiswaBelumHadirMail($siswa->nama, $tanggal, (string) $jamCekSingkat));
+            // ->queue() bukan ->send(): dispatch ke tabel jobs, dikirim
+            // (dan dicoba ulang kalau gagal, lihat $tries/$backoff di
+            // SiswaBelumHadirMail) belakangan oleh queue worker --
+            // konsisten dengan pola di AbsensiRecorder::notifikasiKehadiran().
+            // Efek sampingnya: status 'terkirim' di sini berarti "berhasil
+            // didaftarkan ke antrian", bukan "dikonfirmasi sampai".
+            Mail::to($siswa->email_orang_tua)->queue(new SiswaBelumHadirMail($siswa->nama, $tanggal, (string) $jamCekSingkat));
             $status = 'terkirim';
         } catch (Throwable) {
             $status = 'gagal';

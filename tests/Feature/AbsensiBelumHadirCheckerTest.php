@@ -52,7 +52,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
 
         $this->assertSame(0, $jumlah);
         $this->assertDatabaseMissing('notifikasi_absensi_log', ['jenis' => 'belum_hadir']);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_siswa_belum_absen_dinotifikasi_setelah_jam_cek(): void
@@ -74,7 +74,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         // Beda dari alpha: TIDAK menulis baris absensi, siswa mungkin masih
         // dalam perjalanan.
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
-        Mail::assertSent(SiswaBelumHadirMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
+        Mail::assertQueued(SiswaBelumHadirMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
     }
 
     public function test_belum_dinotifikasi_sebelum_jam_cek(): void
@@ -87,7 +87,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         $jumlah = app(AbsensiBelumHadirChecker::class)->jalankan();
 
         $this->assertSame(0, $jumlah);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_tidak_dikirim_ulang_kalau_dijalankan_dua_kali(): void
@@ -105,7 +105,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
             1,
             \App\Models\NotifikasiAbsensiLog::where('siswa_id', $siswa->id)->where('jenis', 'belum_hadir')->count()
         );
-        Mail::assertSent(SiswaBelumHadirMail::class, 1);
+        Mail::assertQueued(SiswaBelumHadirMail::class, 1);
     }
 
     public function test_siswa_yang_sudah_absen_tidak_dinotifikasi(): void
@@ -125,7 +125,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         $jumlah = app(AbsensiBelumHadirChecker::class)->jalankan();
 
         $this->assertSame(0, $jumlah);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_siswa_dengan_pengajuan_izin_menunggu_tidak_dinotifikasi(): void
@@ -146,7 +146,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         $jumlah = app(AbsensiBelumHadirChecker::class)->jalankan();
 
         $this->assertSame(0, $jumlah);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_tidak_menotifikasi_saat_hari_libur(): void
@@ -160,7 +160,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         $jumlah = app(AbsensiBelumHadirChecker::class)->jalankan();
 
         $this->assertSame(0, $jumlah);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_siswa_nonaktif_tidak_dinotifikasi(): void
@@ -173,7 +173,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         $jumlah = app(AbsensiBelumHadirChecker::class)->jalankan();
 
         $this->assertSame(0, $jumlah);
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_siswa_dinotifikasi_whatsapp_kalau_fonnte_aktif(): void
@@ -212,7 +212,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         app(AbsensiBelumHadirChecker::class)->jalankan();
 
         $this->assertSame(1, \App\Models\NotifikasiAbsensiLog::where('siswa_id', $siswa->id)->where('jenis', 'belum_hadir')->count());
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_email_tetap_terkirim_kalau_siswa_tidak_punya_nomor_wa_walau_kanal_wa_aktif(): void
@@ -226,7 +226,7 @@ class AbsensiBelumHadirCheckerTest extends TestCase
 
         app(AbsensiBelumHadirChecker::class)->jalankan();
 
-        Mail::assertSent(SiswaBelumHadirMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
+        Mail::assertQueued(SiswaBelumHadirMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
         $this->assertDatabaseHas('notifikasi_absensi_log', [
             'siswa_id' => $siswa->id,
             'jenis' => 'belum_hadir',

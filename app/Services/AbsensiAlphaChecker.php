@@ -100,7 +100,15 @@ class AbsensiAlphaChecker
         }
 
         try {
-            Mail::to($siswa->email_orang_tua)->send(new SiswaAlphaMail($siswa->nama, $tanggal));
+            // ->queue() bukan ->send(): dispatch ke tabel jobs, dikirim
+            // (dan dicoba ulang kalau gagal, lihat $tries/$backoff di
+            // SiswaAlphaMail) belakangan oleh queue worker -- konsisten
+            // dengan pola di AbsensiRecorder::notifikasiKehadiran(). Efek
+            // sampingnya: status 'terkirim' di sini berarti "berhasil
+            // didaftarkan ke antrian", bukan "dikonfirmasi sampai" --
+            // kegagalan pengiriman asli (setelah retry habis) tidak
+            // tercermin balik ke baris log ini.
+            Mail::to($siswa->email_orang_tua)->queue(new SiswaAlphaMail($siswa->nama, $tanggal));
             $status = 'terkirim';
         } catch (Throwable) {
             $status = 'gagal';

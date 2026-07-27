@@ -470,7 +470,11 @@ class AbsensiRecorderTest extends TestCase
             'kanal' => 'whatsapp',
             'status' => 'terkirim',
         ]);
-        Mail::assertNothingSent();
+        // assertNothingOutgoing (bukan assertNothingSent) -- kehadiran
+        // dikirim lewat ->queue(), assertNothingSent() cuma ngecek mail
+        // yang ->send() sinkron, tidak akan menangkap kalau logika skip
+        // email di atas ternyata bocor dan tetap men-queue.
+        Mail::assertNothingOutgoing();
     }
 
     public function test_email_tetap_terkirim_kalau_siswa_tidak_punya_nomor_wa_walau_kanal_wa_aktif(): void
