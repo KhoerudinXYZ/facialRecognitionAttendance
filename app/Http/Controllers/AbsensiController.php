@@ -6,6 +6,7 @@ use App\Models\Absensi;
 use App\Models\AbsensiAuditLog;
 use App\Models\HariLibur;
 use App\Models\Kelas;
+use App\Models\Pengaturan;
 use App\Models\Siswa;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -118,7 +119,10 @@ class AbsensiController extends Controller
         $absensi->status = $validated['status'];
         $absensi->metode = 'manual';
         $absensi->keterangan = $validated['keterangan'] ?? null;
-        $absensi->jam_masuk = $statusHadir ? Carbon::now()->format('H:i:s') : null;
+        // Pengaturan::sekarang() (bukan Carbon::now() langsung) supaya ikut
+        // menghormati simulasi_waktu, konsisten dengan seluruh alur absensi
+        // lain -- lihat catatan di Pengaturan::waktuSekarang().
+        $absensi->jam_masuk = $statusHadir ? Pengaturan::sekarang()->format('H:i:s') : null;
 
         if (! $statusHadir) {
             $absensi->jam_pulang = null;
