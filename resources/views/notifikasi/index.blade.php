@@ -18,8 +18,8 @@
                 <div>
                     <span class="font-outfit font-black text-lg text-slate-800 dark:text-slate-100 block">Sistem Notifikasi Otomatis</span>
                     <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 font-jakarta mt-1 leading-relaxed">
-                        Riwayat notifikasi ke orang tua lewat email &amp; WhatsApp: konfirmasi <strong class="text-indigo-600 dark:text-indigo-400">kehadiran</strong> (dikirim otomatis tiap siswa absen masuk), peringatan dini <strong class="text-amber-600 dark:text-amber-400">belum hadir</strong> (siswa belum absen di jam yang diatur admin), dan pemberitahuan <strong class="text-rose-600 dark:text-rose-400">alpha</strong> (siswa belum absen sampai beberapa jam setelah jam pulang).
-                        Kalau <code>MAIL_MAILER</code> di server menggunakan <code>log</code> (belum SMTP asli), status "Terkirim" berarti email berhasil ditulis ke log lokal. Kanal WhatsApp cuma aktif kalau <code>FONNTE_TOKEN</code> sudah diisi di server.
+                        Riwayat notifikasi ke orang tua: konfirmasi <strong class="text-indigo-600 dark:text-indigo-400">kehadiran</strong> (dikirim otomatis tiap siswa absen masuk), peringatan dini <strong class="text-amber-600 dark:text-amber-400">belum hadir</strong> (siswa belum absen di jam yang diatur admin), dan pemberitahuan <strong class="text-rose-600 dark:text-rose-400">alpha</strong> (siswa belum absen sampai beberapa jam setelah jam pulang).
+                        WhatsApp jadi kanal prioritas kalau nomor orang tua terdaftar &amp; <code>FONNTE_TOKEN</code> sudah diisi di server — email cuma dikirim sebagai cadangan kalau WA tidak bisa dipakai (nomor kosong). Kalau <code>MAIL_MAILER</code> di server menggunakan <code>log</code> (belum SMTP asli), status "Terkirim" pada email berarti berhasil ditulis ke log lokal, bukan benar-benar terkirim.
                     </p>
                 </div>
             </div>

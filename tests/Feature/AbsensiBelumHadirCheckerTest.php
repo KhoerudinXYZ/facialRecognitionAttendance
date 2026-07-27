@@ -196,4 +196,43 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === 'https://api.fonnte.com/send'
             && $request['target'] === '6281234567890');
     }
+
+    public function test_email_tidak_ikut_terkirim_kalau_whatsapp_berhasil_dipakai(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        Http::fake(['api.fonnte.com/*' => Http::response(['status' => true], 200)]);
+        Pengaturan::get()->update(['jam_cek_belum_hadir' => '09:30']);
+        Carbon::setTestNow('2026-07-13 09:30:00');
+        $siswa = $this->siswa([
+            'no_hp_orang_tua' => '081234567890',
+            'email_orang_tua' => 'ortu@example.com',
+        ]);
+
+        app(AbsensiBelumHadirChecker::class)->jalankan();
+
+        $this->assertSame(1, \App\Models\NotifikasiAbsensiLog::where('siswa_id', $siswa->id)->where('jenis', 'belum_hadir')->count());
+        Mail::assertNothingSent();
+    }
+
+    public function test_email_tetap_terkirim_kalau_siswa_tidak_punya_nomor_wa_walau_kanal_wa_aktif(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        Http::fake();
+        Pengaturan::get()->update(['jam_cek_belum_hadir' => '09:30']);
+        Carbon::setTestNow('2026-07-13 09:30:00');
+        $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
+
+        app(AbsensiBelumHadirChecker::class)->jalankan();
+
+        Mail::assertSent(SiswaBelumHadirMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'belum_hadir',
+            'kanal' => 'email',
+            'status' => 'terkirim',
+        ]);
+        Http::assertNothingSent();
+    }
 }

@@ -9,19 +9,26 @@ use Illuminate\Support\Facades\Http;
 use Throwable;
 
 /**
- * Kanal WhatsApp lewat Fonnte (https://fonnte.com), berdampingan dengan
- * email — best effort sama seperti kanal email di AbsensiRecorder /
- * AbsensiAlphaChecker: kegagalan kirim (nomor kosong, token belum diisi,
- * device Fonnte offline, dsb) tidak boleh menggagalkan proses absen/alpha
- * itu sendiri, cuma dicatat ke notifikasi_absensi_log (kanal 'whatsapp').
+ * Kanal WhatsApp lewat Fonnte (https://fonnte.com) — sekarang jadi kanal
+ * PRIORITAS: kalau siswa punya nomor WA orang tua & kanal ini aktif,
+ * kirimDanCatat() return true dan pemanggil (AbsensiRecorder/
+ * AbsensiAlphaChecker/AbsensiBelumHadirChecker) TIDAK lagi mengirim email
+ * dobel — email cuma jadi cadangan kalau WA tidak bisa dipakai untuk siswa
+ * itu (nomor kosong) atau kanalnya memang belum diaktifkan (token kosong).
+ * Return value cuma menandai "apakah WA dicoba" (token & nomor ada), bukan
+ * "apakah benar-benar terkirim" — kegagalan jaringan/HTTP tetap dicatat
+ * sebagai status 'gagal' di log, tapi TIDAK memicu email susulan supaya
+ * tidak muncul notifikasi dobel yang membingungkan orang tua kalau
+ * masalahnya cuma sesaat.
  *
  * FONNTE_TOKEN kosong di .env = kanal ini nonaktif diam-diam, tidak ada
  * percobaan HTTP sama sekali (supaya tidak menghasilkan baris "gagal" di
- * log padahal memang sengaja belum diaktifkan).
+ * log padahal memang sengaja belum diaktifkan) — pemanggil otomatis jatuh
+ * ke email seperti sebelum kanal WA ada.
  */
 class WhatsAppNotifier
 {
-    public function kirimDanCatat(Siswa $siswa, Carbon $tanggal, string $jenis, string $pesan): void
+    public function kirimDanCatat(Siswa $siswa, Carbon $tanggal, string $jenis, string $pesan): bool
     {
         $token = config('services.fonnte.token');
 
@@ -29,7 +36,7 @@ class WhatsAppNotifier
             // Kanal belum diaktifkan sama sekali (token kosong) — tidak
             // dicatat ke log supaya tabel tidak kebanjiran baris "nonaktif"
             // di setiap event selama sekolah belum daftar Fonnte.
-            return;
+            return false;
         }
 
         $nomor = $this->normalisasiNomor($siswa->no_hp_orang_tua);
@@ -46,7 +53,7 @@ class WhatsAppNotifier
                 'status' => 'tidak_ada_kontak',
             ]);
 
-            return;
+            return false;
         }
 
         NotifikasiAbsensiLog::create([
@@ -59,6 +66,8 @@ class WhatsAppNotifier
             'pesan' => $pesan,
             'status' => $this->kirim($token, $nomor, $pesan) ? 'terkirim' : 'gagal',
         ]);
+
+        return true;
     }
 
     private function kirim(string $token, string $nomor, string $pesan): bool

@@ -212,4 +212,47 @@ class AbsensiAlphaCheckerTest extends TestCase
         $this->assertSame(1, $jumlah);
         $this->assertDatabaseHas('absensi', ['siswa_id' => $siswa->id, 'status' => 'alpha']);
     }
+
+    public function test_email_tidak_ikut_terkirim_kalau_whatsapp_berhasil_dipakai(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        Http::fake(['api.fonnte.com/*' => Http::response(['status' => true], 200)]);
+        Carbon::setTestNow('2026-07-13 20:00:00');
+        $siswa = $this->siswa([
+            'no_hp_orang_tua' => '081234567890',
+            'email_orang_tua' => 'ortu@example.com',
+        ]);
+
+        app(AbsensiAlphaChecker::class)->jalankan();
+
+        $this->assertSame(1, \App\Models\NotifikasiAbsensiLog::where('siswa_id', $siswa->id)->where('jenis', 'alpha')->count());
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'kanal' => 'whatsapp',
+            'status' => 'terkirim',
+        ]);
+        Mail::assertNothingSent();
+    }
+
+    public function test_email_tetap_terkirim_kalau_siswa_tidak_punya_nomor_wa_walau_kanal_wa_aktif(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        Http::fake();
+        Carbon::setTestNow('2026-07-13 20:00:00');
+        $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
+
+        app(AbsensiAlphaChecker::class)->jalankan();
+
+        Mail::assertSent(SiswaAlphaMail::class, fn ($mail) => $mail->hasTo('ortu@example.com'));
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'kanal' => 'email',
+            'status' => 'terkirim',
+        ]);
+        Http::assertNothingSent();
+    }
 }

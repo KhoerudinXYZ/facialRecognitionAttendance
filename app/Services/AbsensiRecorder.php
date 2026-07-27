@@ -186,6 +186,20 @@ class AbsensiRecorder
         $pesan = "Yth. Orang Tua/Wali dari {$siswa->nama}, kami informasikan ananda sudah tiba di sekolah pada "
             . "{$waktu->format('d/m/Y H:i')} ({$status}).";
 
+        // WA jadi kanal prioritas — email cuma dikirim kalau WA tidak bisa
+        // dipakai buat siswa ini (nomor kosong) atau kanalnya belum
+        // diaktifkan (lihat WhatsAppNotifier). Sengaja terkunci di
+        // belakang toggle terpisah (bukan cuma FONNTE_TOKEN) — rollout
+        // bertahap: alpha jalan duluan (volume kecil), kehadiran (volume
+        // tinggi, burst tiap pagi) menyusul begitu nomor WA sudah "hangat".
+        // Lihat FONNTE_KEHADIRAN_AKTIF di .env.
+        $waTerkirim = config('services.fonnte.kehadiran_aktif')
+            && app(WhatsAppNotifier::class)->kirimDanCatat($siswa, $tanggal, 'kehadiran', $pesan);
+
+        if ($waTerkirim) {
+            return;
+        }
+
         if (! $siswa->email_orang_tua) {
             NotifikasiAbsensiLog::create([
                 'siswa_id' => $siswa->id,
@@ -197,43 +211,37 @@ class AbsensiRecorder
                 'pesan' => $pesan,
                 'status' => 'tidak_ada_kontak',
             ]);
-        } else {
-            try {
-                // ->queue() bukan ->send(): SMTP (Gmail) butuh 0.5-2+ detik untuk
-                // connect+auth+kirim, dan sebelumnya itu terjadi SYNCHRONOUS di
-                // tengah request absen -- siswa harus nunggu email orang tua
-                // selesai terkirim dulu baru dapat response "absen berhasil".
-                // Dengan ->queue() (QUEUE_CONNECTION=database sudah diset di
-                // .env), job cuma didaftarkan ke tabel jobs (cepat) dan
-                // dikirim belakangan oleh queue worker -- butuh
-                // `php artisan queue:work` (atau queue:listen) jalan di
-                // background, kalau tidak job akan menumpuk di tabel jobs
-                // tanpa pernah terkirim.
-                Mail::to($siswa->email_orang_tua)->queue(new SiswaHadirMail($siswa->nama, $waktu, $status));
-                $hasil = 'terkirim';
-            } catch (Throwable) {
-                $hasil = 'gagal';
-            }
 
-            NotifikasiAbsensiLog::create([
-                'siswa_id' => $siswa->id,
-                'siswa_nama' => $siswa->nama,
-                'tanggal' => $tanggal,
-                'jenis' => 'kehadiran',
-                'kanal' => 'email',
-                'kontak' => $siswa->email_orang_tua,
-                'pesan' => $pesan,
-                'status' => $hasil,
-            ]);
+            return;
         }
 
-        // Sengaja terkunci di belakang toggle terpisah (bukan cuma
-        // FONNTE_TOKEN) — rollout bertahap: alpha jalan duluan (volume
-        // kecil), kehadiran (volume tinggi, burst tiap pagi) menyusul
-        // begitu nomor WA sudah "hangat". Lihat FONNTE_KEHADIRAN_AKTIF di .env.
-        if (config('services.fonnte.kehadiran_aktif')) {
-            app(WhatsAppNotifier::class)->kirimDanCatat($siswa, $tanggal, 'kehadiran', $pesan);
+        try {
+            // ->queue() bukan ->send(): SMTP (Gmail) butuh 0.5-2+ detik untuk
+            // connect+auth+kirim, dan sebelumnya itu terjadi SYNCHRONOUS di
+            // tengah request absen -- siswa harus nunggu email orang tua
+            // selesai terkirim dulu baru dapat response "absen berhasil".
+            // Dengan ->queue() (QUEUE_CONNECTION=database sudah diset di
+            // .env), job cuma didaftarkan ke tabel jobs (cepat) dan
+            // dikirim belakangan oleh queue worker -- butuh
+            // `php artisan queue:work` (atau queue:listen) jalan di
+            // background, kalau tidak job akan menumpuk di tabel jobs
+            // tanpa pernah terkirim.
+            Mail::to($siswa->email_orang_tua)->queue(new SiswaHadirMail($siswa->nama, $waktu, $status));
+            $hasil = 'terkirim';
+        } catch (Throwable) {
+            $hasil = 'gagal';
         }
+
+        NotifikasiAbsensiLog::create([
+            'siswa_id' => $siswa->id,
+            'siswa_nama' => $siswa->nama,
+            'tanggal' => $tanggal,
+            'jenis' => 'kehadiran',
+            'kanal' => 'email',
+            'kontak' => $siswa->email_orang_tua,
+            'pesan' => $pesan,
+            'status' => $hasil,
+        ]);
     }
 
     /**

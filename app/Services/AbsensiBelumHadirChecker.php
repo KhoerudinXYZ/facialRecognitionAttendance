@@ -76,6 +76,16 @@ class AbsensiBelumHadirChecker
         $pesan = "Yth. Orang Tua/Wali dari {$siswa->nama}, kami informasikan ananda belum hadir di sekolah hingga "
             . "pukul {$jamCekSingkat}. Mohon konfirmasi ke pihak sekolah. Terima kasih.";
 
+        // WA jadi kanal prioritas — email cuma dikirim kalau WA tidak bisa
+        // dipakai buat siswa ini (nomor kosong) atau kanalnya belum
+        // diaktifkan (lihat WhatsAppNotifier). Sama seperti alpha (bukan
+        // kehadiran): volume kecil (cuma siswa yang belum hadir), jadi
+        // tidak dikunci di belakang FONNTE_KEHADIRAN_AKTIF — cukup
+        // FONNTE_TOKEN terisi.
+        if (app(WhatsAppNotifier::class)->kirimDanCatat($siswa, $tanggal, 'belum_hadir', $pesan)) {
+            return;
+        }
+
         if (! $siswa->email_orang_tua) {
             NotifikasiAbsensiLog::create([
                 'siswa_id' => $siswa->id,
@@ -87,29 +97,26 @@ class AbsensiBelumHadirChecker
                 'pesan' => $pesan,
                 'status' => 'tidak_ada_kontak',
             ]);
-        } else {
-            try {
-                Mail::to($siswa->email_orang_tua)->send(new SiswaBelumHadirMail($siswa->nama, $tanggal, (string) $jamCekSingkat));
-                $status = 'terkirim';
-            } catch (Throwable) {
-                $status = 'gagal';
-            }
 
-            NotifikasiAbsensiLog::create([
-                'siswa_id' => $siswa->id,
-                'siswa_nama' => $siswa->nama,
-                'tanggal' => $tanggal,
-                'jenis' => 'belum_hadir',
-                'kanal' => 'email',
-                'kontak' => $siswa->email_orang_tua,
-                'pesan' => $pesan,
-                'status' => $status,
-            ]);
+            return;
         }
 
-        // Sama seperti alpha (bukan kehadiran): volume kecil (cuma siswa
-        // yang belum hadir), jadi tidak dikunci di belakang
-        // FONNTE_KEHADIRAN_AKTIF — cukup FONNTE_TOKEN terisi.
-        app(WhatsAppNotifier::class)->kirimDanCatat($siswa, $tanggal, 'belum_hadir', $pesan);
+        try {
+            Mail::to($siswa->email_orang_tua)->send(new SiswaBelumHadirMail($siswa->nama, $tanggal, (string) $jamCekSingkat));
+            $status = 'terkirim';
+        } catch (Throwable) {
+            $status = 'gagal';
+        }
+
+        NotifikasiAbsensiLog::create([
+            'siswa_id' => $siswa->id,
+            'siswa_nama' => $siswa->nama,
+            'tanggal' => $tanggal,
+            'jenis' => 'belum_hadir',
+            'kanal' => 'email',
+            'kontak' => $siswa->email_orang_tua,
+            'pesan' => $pesan,
+            'status' => $status,
+        ]);
     }
 }
