@@ -56,6 +56,12 @@
             @if ($caption)
                 <p class="text-slate-500 dark:text-slate-400 text-xs mt-6">{{ $caption }}</p>
             @endif
+
+            <a href="https://wa.me/6282319706819" target="_blank" rel="noopener"
+               class="mt-2 inline-flex items-center gap-1.5 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs transition-colors">
+                <x-icon name="send" class="w-3.5 h-3.5" />
+                Butuh bantuan? Hubungi kami
+            </a>
         </div>
 
         <script>
