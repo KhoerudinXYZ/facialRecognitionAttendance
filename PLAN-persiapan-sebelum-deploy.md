@@ -56,35 +56,40 @@ Chrome devtools), untuk:
 
 ## 2. Keputusan yang Perlu Diambil (Bukan Cuma Teknis)
 
-- [ ] **Data siswa**: mulai dari database kosong di Railway, atau bawa
-      113 siswa yang ada sekarang? Kalau bawa: database ini masih
-      bercampur data asli & data test/dummy yang ketemu semalam ("SMTP
-      Reset Test", "Capcin Capcin", nomor WA yang dipakai berkali-kali
-      di siswa berbeda) -- **perlu dibersihkan dulu** sebelum jadi data
-      production, jangan langsung di-mysqldump apa adanya.
-- [ ] **Storage foto siswa**: Railway Volume (lebih cepat setup, terikat
-      1 region) atau S3-compatible seperti Cloudflare R2 (lebih tahan
-      lama, kerjaan lebih banyak)? Ini menentukan langkah di
-      `PLAN-deploy-railway.md` poin 4, perlu diputuskan sebelum mulai.
-- [ ] **`FONNTE_KEHADIRAN_AKTIF`**: langsung `true` di Railway (semua
-      notifikasi WA aktif penuh sejak hari pertama), atau `false` dulu
-      buat rollout bertahap ulang seperti strategi awal ("hangatkan"
-      nomor via alpha/koreksi dulu, baru kehadiran)?
-- [ ] **Domain**: pakai subdomain default Railway dulu, atau langsung
-      custom domain? Kalau custom domain, siapkan DNS-nya besok juga
-      supaya tidak nunggu propagasi pas lagi proses deploy.
-- [ ] **`Pengaturan::jam_cek_belum_hadir`** sekarang aktif (`09:30`) dan
-      **verifikasi lokasi GPS aktif** di database lokal -- kalau data ini
-      ikut terbawa ke Railway, pastikan nilainya memang yang diinginkan
-      untuk production (radius & titik sekolah harus dicek ulang, bukan
-      asumsi otomatis benar).
+> **Sudah diputuskan** (2026-07-28):
+
+- [x] **Data siswa**: **mulai dari database kosong** di Railway. 113
+      siswa yang ada sekarang (campur data asli & data test/dummy —
+      "SMTP Reset Test", "Capcin Capcin", dll) TIDAK ikut dibawa —
+      didaftar ulang manual/import Excel di Railway nanti, jadi tidak
+      perlu proses bersih-bersih data lokal sebelum deploy. Efek samping:
+      `Pengaturan::jam_cek_belum_hadir` (aktif, `09:30`) dan lokasi GPS
+      (aktif) di lokal juga TIDAK ikut terbawa — nilai ini perlu diisi
+      ulang dari nol lewat halaman Pengaturan di Railway setelah online,
+      bukan diasumsikan sudah benar.
+- [x] **Storage foto siswa**: **Railway Volume**. Setup cepat, cukup
+      buat pilot 1 bulan. Kalau nanti pindah region/scaling perlu S3,
+      itu jadi migrasi terpisah di kemudian hari, bukan blocker sekarang.
+- [x] **`FONNTE_KEHADIRAN_AKTIF`**: **`false`** saat pertama online —
+      rollout bertahap ulang seperti strategi awal (alpha/koreksi dulu
+      buat "menghangatkan" nomor, kehadiran menyusul manual setelah
+      yakin volumenya aman).
+- [x] **Domain**: **subdomain default Railway** dulu. Custom domain bisa
+      menyusul kapan saja tanpa perlu deploy ulang, tidak jadi blocker
+      buat online besok.
 
 ## 3. Item Teknis Kecil yang Masih Menggantung
 
-- [ ] `composer.json` belum mendeklarasikan `ext-zip`/`ext-gd`/
-      `ext-pdo_mysql` secara eksplisit (lihat `PLAN-deploy-railway.md`) --
-      paling aman ditambahkan besok pagi SEBELUM push ke Railway, bukan
-      ditemukan lewat build yang gagal.
+- [x] **Selesai** — `composer.json` sekarang mendeklarasikan `ext-zip`/
+      `ext-gd`/`ext-pdo_mysql` eksplisit (lewat `composer require ... --no-update`
+      + `composer update --lock` buat sinkronkan lock file). Sekalian
+      ketemu & diperbaiki: `composer audit` melaporkan 10 celah keamanan
+      di `dompdf/dompdf` (medium — local file read, DoS) & `guzzlehttp/
+      guzzle` (medium — kebocoran header lewat redirect); sudah di-update
+      ke versi yang sudah diperbaiki (`dompdf` v3.1.5→v3.1.6, `guzzle`
+      7.13.1→7.15.2). `composer audit` sekarang bersih. 163 test tetap
+      lolos setelah update (termasuk yang benar-benar memanggil route
+      export PDF, jadi dompdf baru sudah teruji).
 - [ ] Push semua commit ke `origin/main` -- per malam ini ada belasan
       commit lokal yang belum ke-push sama sekali.
 - [ ] Cek ulang `.env` production checklist di `PLAN-deploy-railway.md`

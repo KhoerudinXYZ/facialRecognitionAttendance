@@ -2,6 +2,9 @@
 
 > Status: **checklist buat dikerjakan besok, belum dieksekusi.**
 > Ditulis 2026-07-27 malam setelah sesi perbaikan timezone & notifikasi WA.
+> Keputusan storage/data/domain sudah difinalkan 2026-07-28 (lihat
+> `PLAN-persiapan-sebelum-deploy.md` bagian 2) — checklist di bawah sudah
+> disesuaikan, tidak ada lagi opsi yang perlu dipilih saat eksekusi.
 
 ## Sebelum Mulai (cek di lokal dulu)
 
@@ -29,23 +32,22 @@
 3. **Isi environment variables** di service web (checklist lengkap di
    bawah, jangan cuma asal `.env` di-paste karena beberapa nilai harus
    beda untuk production).
-4. **Volume persisten buat storage** — `FILESYSTEM_DISK=local` dan
-   backup (`spatie/laravel-backup`, disk `local`) sekarang nulis ke
-   filesystem container yang ephemeral di Railway (hilang tiap
-   redeploy/restart). Tambah Railway Volume, mount ke
-   `/app/storage/app` (sesuaikan path sebenarnya di container), supaya
-   foto wajah siswa & backup tidak hilang. Alternatif lebih tahan lama:
-   pindah ke S3-compatible (Cloudflare R2/Backblaze B2) lewat driver
-   `s3` bawaan Laravel — lebih banyak kerjaan tapi tidak terikat ke satu
-   volume/region.
+4. **Volume persisten buat storage** — sudah diputuskan: **Railway
+   Volume** (bukan S3). `FILESYSTEM_DISK=local` dan backup
+   (`spatie/laravel-backup`, disk `local`) sekarang nulis ke filesystem
+   container yang ephemeral di Railway (hilang tiap redeploy/restart).
+   Tambah Railway Volume, mount ke `/app/storage/app` (sesuaikan path
+   sebenarnya di container), supaya foto wajah siswa & backup tidak
+   hilang.
 5. **Jalankan migrasi** setelah deploy pertama berhasil (`php artisan
    migrate --force` lewat Railway shell/one-off command — jangan lupa
    `--force` karena `APP_ENV` bukan `local`).
-6. **Putuskan soal data**: mulai dari database kosong, atau bawa data
-   113 siswa yang sudah ada di lokal? Kalau bawa: `mysqldump` dari MySQL
-   lokal, import ke MySQL Railway (lewat Railway CLI/dashboard's query
-   tool), **lakukan ini SEBELUM mengarahkan siswa asli ke domain baru**
-   supaya tidak ada dua sumber data yang beda.
+6. **Data siswa**: sudah diputuskan **mulai dari database kosong** —
+   tidak ada import/mysqldump dari lokal. Daftar siswa asli manual atau
+   lewat import Excel (`siswa.import`) langsung di Railway setelah
+   online. `Pengaturan` (jam masuk/pulang, lokasi GPS, dst) juga perlu
+   diisi ulang dari nol lewat halaman Pengaturan — jangan asumsikan
+   nilai dari lokal ikut terbawa.
 7. **Setup scheduler** (lihat bagian terpisah di bawah — ini pengganti
    Windows Task Scheduler yang dipakai di lokal).
 8. **Setup queue worker** (juga di bawah — pengganti `QUEUE_CONNECTION=
@@ -55,9 +57,9 @@
    - Cek `php artisan tinker` di Railway shell: `config('app.timezone')`
      harus `Asia/Jakarta`, `Carbon::now()` harus cocok jam WIB asli.
    - Test kirim satu notifikasi kehadiran manual, cek masuk ke WA/email
-     yang benar (jangan lupa `FONNTE_KEHADIRAN_AKTIF` masih `true` di
-     Railway kalau memang mau langsung aktif, atau `false` kalau mau
-     rollout bertahap lagi seperti di lokal).
+     yang benar. `FONNTE_KEHADIRAN_AKTIF` sengaja `false` dulu (lihat
+     checklist env var) — kehadiran belum akan kirim WA sampai diaktifkan
+     manual nanti setelah nomor "hangat".
    - Diamkan beberapa menit, cek `notifikasi_absensi_log` bertambah
      sendiri (bukti scheduler jalan) tanpa perlu trigger manual.
 
@@ -70,15 +72,15 @@ adanya dari `.env` lokal:
 |---|---|
 | `APP_ENV` | `production` |
 | `APP_DEBUG` | `false` |
-| `APP_URL` | domain Railway (atau custom domain kalau sudah ada) |
+| `APP_URL` | subdomain default Railway dulu (sudah diputuskan, custom domain menyusul kapan saja tanpa perlu deploy ulang) |
 | `APP_TIMEZONE` | `Asia/Jakarta` — **jangan sampai lupa**, ini env var baru dari perbaikan tadi malam, tanpa ini Railway balik ke bug UTC yang sama |
 | `APP_KEY` | generate baru (`php artisan key:generate --show`) atau pakai yang sama dari lokal kalau mau kontinuitas session — tidak ada kolom terenkripsi di app ini yang bergantung ke key lama, jadi aman generate baru |
 | `DB_*` | dari kredensial MySQL addon Railway (biasanya auto-inject sebagai `MYSQL_*`, sesuaikan nama var ke `DB_HOST`/`DB_PORT`/dst yang dibaca `config/database.php`) |
 | `MAIL_MAILER`, `MAIL_HOST`, dst | kredensial SMTP asli (jangan `log`, supaya notifikasi kehadiran/alpha/belum-hadir beneran terkirim) |
 | `FONNTE_TOKEN` | token asli |
-| `FONNTE_KEHADIRAN_AKTIF` | putuskan: `true` (langsung aktif) atau `false` (rollout bertahap ulang di lingkungan baru) |
+| `FONNTE_KEHADIRAN_AKTIF` | `false` — sudah diputuskan rollout bertahap ulang di lingkungan baru, sama seperti strategi awal |
 | `QUEUE_CONNECTION` | `database` (tetap, asal queue worker jalan — lihat bawah) |
-| `FILESYSTEM_DISK` | `local` (kalau pakai Volume) atau `s3` (kalau pindah ke storage eksternal) |
+| `FILESYSTEM_DISK` | `local` — sudah diputuskan pakai Railway Volume, bukan `s3` |
 | `SESSION_SECURE_COOKIE` | `true` — lokal sengaja `false` karena dev server HTTP polos, Railway selalu HTTPS, tanpa ini cookie sesi bisa terkirim tidak terenkripsi |
 
 ## Scheduler (pengganti Windows Task Scheduler)
