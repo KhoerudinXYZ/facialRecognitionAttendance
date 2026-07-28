@@ -42,6 +42,20 @@
 5. **Jalankan migrasi** setelah deploy pertama berhasil (`php artisan
    migrate --force` lewat Railway shell/one-off command — jangan lupa
    `--force` karena `APP_ENV` bukan `local`).
+5a. **Buat akun admin pertama** — `migrate --force` saja TIDAK membuat
+    user apa pun, jadi tanpa langkah ini tidak ada cara login sama sekali
+    ke Railway yang baru online. Jalankan `php artisan db:seed --force`
+    (lewat Railway shell/one-off command yang sama) — ini membuat
+    `admin@smk.test` / `password` DAN 3 kelas contoh + wali kelas dummy
+    (`budi@smk.test`, `siti@smk.test`, `andi@smk.test`, password sama).
+    Segera setelah itu, SEBELUM mengumumkan ke siapa pun:
+    - Hapus 3 kelas contoh & 3 akun wali kelas dummy tadi (lewat halaman
+      admin Kelas/Staff, atau `php artisan tinker` kalau lebih cepat) —
+      bukan data sekolah asli, jangan sampai ke-import siswa asli ke
+      kelas dummy ini.
+    - Login sebagai `admin@smk.test`, langsung ganti password lewat
+      halaman profil. Kredensial default ini publik di riwayat git
+      (lihat `DEPLOYMENT.md` #7), jangan biarkan aktif di production.
 6. **Data siswa**: sudah diputuskan **mulai dari database kosong** —
    tidak ada import/mysqldump dari lokal. Daftar siswa asli manual atau
    lewat import Excel (`siswa.import`) langsung di Railway setelah
