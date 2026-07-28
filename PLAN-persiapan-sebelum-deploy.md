@@ -1,9 +1,13 @@
-# Rencana: Persiapan Besok, Sebelum Mulai Setup Hosting Railway
+# Rencana: Persiapan Besok, Sebelum Siswa Asli Mulai Pakai Railway
 
-> Status: **checklist buat besok pagi, belum dikerjakan.**
+> Status: Bagian 2 & 3 sudah selesai + sudah di-push. Bagian 1
+> (verifikasi manual) BELUM dikerjakan — baru bisa jalan setelah deploy
+> awal Railway online (lihat catatan HTTPS di Bagian 1).
 > Ditulis 2026-07-28 dini hari setelah sesi kerja paling padat sejauh ini
-> (lihat "Ditambahkan Hari Ini" di `FITUR.md`). Ini persiapan SEBELUM
-> mulai eksekusi `PLAN-deploy-railway.md` — bukan pengganti checklist itu.
+> (lihat "Ditambahkan Hari Ini" di `FITUR.md`). Bukan pengganti
+> `PLAN-deploy-railway.md` — dokumen ini isinya keputusan +
+> verifikasi di sekitar deploy itu, bukan langkah teknis deploy-nya
+> sendiri.
 
 ## Kenapa Perlu Sesi Persiapan Terpisah
 
@@ -11,15 +15,36 @@ Malam ini banyak sekali logika inti yang berubah (gate jam_masuk, timezone,
 prioritas notifikasi WA, anti-spoofing GPS, fitur koreksi absensi) dan
 sejauh ini cuma diverifikasi lewat automated test (163 test lolos) —
 **belum ada satu pun yang dicoba manual di browser sungguhan dengan HP
-asli**. Deploy ke production dengan data siswa asli tanpa verifikasi
-manual dulu berisiko tinggi mengulang insiden malam ini (notifikasi
-dobel, dsb) tapi kali ini ke publik, bukan cuma test data lokal.
+asli**. Rencana awalnya "verifikasi manual dulu baru deploy", tapi itu
+tidak bisa dijalankan (lihat Bagian 1) — jadi gerbang pengamannya
+sekarang dipindah ke: **deploy dengan data kosong dulu, verifikasi
+manual di domain Railway pakai akun test, BARU siswa asli didaftarkan**.
+Insiden notifikasi dobel semalam adalah alasan kenapa langkah ini tidak
+boleh dilewati.
 
-## 1. Verifikasi Manual di Browser (Prioritas Tertinggi)
+## 1. Verifikasi Manual di Browser (Dilakukan SETELAH Deploy Awal, Bukan Sebelum)
+
+> **Update 2026-07-28**: urutan aslinya "verifikasi dulu baru deploy"
+> ternyata tidak bisa dijalankan apa adanya — `APP_URL` lokal sekarang
+> `http://70.70.0.18:8080` (HTTP biasa, LAN). Browser modern (termasuk di
+> HP) menolak kasih akses kamera & GPS di halaman yang bukan *secure
+> context* (harus HTTPS atau `localhost`) — ini aturan browser, bukan
+> bug aplikasi. Jadi hampir semua item di bawah tidak akan bisa dicoba
+> dari URL lokal itu sama sekali.
+>
+> **Diputuskan**: verifikasi manual dilakukan di domain Railway
+> (otomatis HTTPS) SETELAH deploy awal (data kosong), SEBELUM
+> mengumumkan/mengarahkan siswa asli ke situ. Jadi urutannya: deploy
+> dulu (Bagian 2+3 di bawah, lalu `PLAN-deploy-railway.md`) → checklist
+> ini dijalankan di domain Railway pakai 1-2 akun siswa test buatan
+> sendiri → baru siswa asli didaftarkan & diumumkan setelah checklist
+> ini lolos semua.
 
 Automated test menjamin LOGIKA-nya benar, bukan bahwa UI-nya benar-benar
-bisa dipakai. Coba manual, idealnya dari HP asli (bukan cuma desktop
-Chrome devtools), untuk:
+bisa dipakai. Coba manual dari HP asli (bukan cuma desktop Chrome
+devtools) di domain Railway, buat 1-2 siswa test yang kamu daftarkan
+sendiri (pakai email/nomor WA milikmu sendiri, BUKAN data siswa asli —
+lihat insiden notifikasi dobel semalam), untuk:
 
 - [ ] **Pesan izin kamera/lokasi ditolak** (baru dikerjakan): di
       `/portal/enroll` dan `/portal/absen`, coba sengaja tolak izin
@@ -27,11 +52,13 @@ Chrome devtools), untuk:
       tombol "Coba Lagi" (bukan pesan error mentah), lalu perbaiki
       izinnya manual di pengaturan browser dan pastikan tombol Coba Lagi
       benar-benar bikin alurnya lanjut normal.
-- [ ] **Absen mandiri end-to-end**: buka `/portal/absen`, scan wajah
-      sungguhan, cek liveness (kedip) kepakai, cek GPS diminta & diproses
-      (kalau di lokasi asli sekolah/rumah, harus BERHASIL -- kalau perlu,
-      matikan sementara verifikasi lokasi di Pengaturan buat tes ini
-      biar tidak ketolak radius pas bukan di sekolah).
+- [ ] **Absen mandiri end-to-end (tanpa verifikasi lokasi dulu)**:
+      database Railway kosong berarti `Pengaturan::lokasi_lat/lng/radius`
+      masih `null` (verifikasi lokasi otomatis nonaktif sampai diisi
+      admin) -- coba absen dasar dulu tanpa GPS aktif: daftar wajah,
+      scan, liveness (kedip) kepakai, status hadir/terlambat tercatat
+      benar. Baru aktifkan verifikasi lokasi via Pengaturan buat lanjut
+      ke item GPS di bawah.
 - [ ] **Kunci kamera sebelum jam_masuk** -- pastikan pesan "Absen masuk
       belum dibuka" muncul dengan benar di luar jam sekolah (bukan cuma
       lewat `simulasi_waktu`, tapi juga cek tampilannya wajar).
@@ -43,10 +70,13 @@ Chrome devtools), untuk:
 - [ ] **Alur Koreksi Absensi penuh**: siswa lapor -> wali kelas dapat
       email -> wali kelas buka `/koreksi-absensi`, approve dengan pilih
       status -> cek baris absensi beneran berubah.
-- [ ] **Notifikasi WA**: pastikan `FONNTE_KEHADIRAN_AKTIF` di keadaan
-      yang diinginkan (lihat poin 4) sebelum tes supaya tidak mengulang
-      insiden burst notifikasi ke banyak siswa test/dummy lagi -- test
-      ke SATU siswa dengan nomor sendiri dulu seperti semalam.
+- [ ] **Notifikasi WA**: `FONNTE_KEHADIRAN_AKTIF` sudah `false` secara
+      default di Railway (lihat Bagian 2) jadi absen normal TIDAK akan
+      trigger WA kehadiran -- aman dari insiden burst semalam. Tapi
+      alpha/belum-hadir/koreksi TIDAK dikunci flag itu (selalu aktif
+      begitu `FONNTE_TOKEN` terisi) -- pastikan siswa test yang didaftar
+      di Railway cuma pakai nomor WA milikmu sendiri sebelum menguji
+      jalur-jalur itu, JANGAN pakai nomor siswa asli manapun.
 - [ ] **GPS anti-spoofing**: coba sengaja pakai app fake-GPS Android
       (kalau ada) buat lihat apakah benar-benar tertolak, DAN coba absen
       normal dari lokasi asli beberapa kali buat pastikan tidak ada
@@ -90,8 +120,7 @@ Chrome devtools), untuk:
       7.13.1→7.15.2). `composer audit` sekarang bersih. 163 test tetap
       lolos setelah update (termasuk yang benar-benar memanggil route
       export PDF, jadi dompdf baru sudah teruji).
-- [ ] Push semua commit ke `origin/main` -- per malam ini ada belasan
-      commit lokal yang belum ke-push sama sekali.
+- [x] **Selesai** — semua commit sudah di-push ke `origin/main`.
 - [ ] Cek ulang `.env` production checklist di `PLAN-deploy-railway.md`
       (`APP_DEBUG=false`, `APP_TIMEZONE=Asia/Jakarta`, `APP_URL`,
       `SESSION_SECURE_COOKIE=true`, dst) -- sudah didaftar di sana,
@@ -100,12 +129,18 @@ Chrome devtools), untuk:
       (bukan cuma percaya hasil semalam) -- pastikan tidak ada state lokal
       yang kebawa nyasar ke suite.
 
-## Urutan yang Disarankan Besok
+## Urutan yang Disarankan Besok (Diperbarui)
 
-1. Bagian 1 (verifikasi manual) dulu -- percuma lanjut ke keputusan
-   deploy kalau ternyata ada yang rusak di alur inti.
-2. Bagian 2 (keputusan) -- ini yang menentukan langkah konkret di
-   `PLAN-deploy-railway.md`, jangan mulai deploy sebelum ini jelas.
-3. Bagian 3 (item kecil) -- cepat, bisa disisipkan kapan saja sebelum
-   push/deploy.
-4. Baru lanjut `PLAN-deploy-railway.md`.
+Urutan lama ("verifikasi manual dulu baru deploy") sudah tidak berlaku
+karena kendala HTTPS di atas. Urutan sekarang:
+
+1. **Bagian 2 (keputusan)** — sudah selesai semua ✅.
+2. **Bagian 3 (item teknis kecil)** — sudah selesai semua ✅.
+3. **`PLAN-deploy-railway.md`** — deploy pertama ke Railway (data
+   kosong). Ini AMAN dilakukan sebelum verifikasi manual justru karena
+   data-nya kosong, tidak ada siswa asli yang bisa kena dampak.
+4. **Bagian 1 (verifikasi manual)** — dijalankan di domain Railway yang
+   baru online, pakai 1-2 akun siswa test buatan sendiri. Ini gerbang
+   terakhir sebelum siswa asli didaftarkan/diumumkan.
+5. Baru setelah checklist Bagian 1 lolos semua: daftarkan siswa asli
+   (manual atau import Excel) dan umumkan ke sekolah.
