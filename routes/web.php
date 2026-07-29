@@ -90,6 +90,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('hari-libur', [HariLiburController::class, 'index'])->name('hari-libur.index');
         Route::post('hari-libur', [HariLiburController::class, 'store'])->name('hari-libur.store');
+        Route::post('hari-libur/bulk', [HariLiburController::class, 'storeBulk'])->name('hari-libur.storeBulk');
         Route::delete('hari-libur/{hariLibur}', [HariLiburController::class, 'destroy'])->name('hari-libur.destroy');
 
         Route::get('absensi/audit', [AbsensiController::class, 'audit'])->name('absensi.audit');

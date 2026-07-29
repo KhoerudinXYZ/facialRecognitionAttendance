@@ -156,5 +156,111 @@
             </div>
         </div>
 
+        {{-- Bento Card: Kalender Tanggal Merah (pilih tersebar, simpan sekaligus) --}}
+        <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden"
+             x-data="{ selected: [], keteranganBulk: '' }">
+            <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">TANGGAL MERAH</div>
+
+            <div class="relative z-10">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-slate-200/50 dark:border-slate-700/50 mb-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-600 text-white flex items-center justify-center shadow-lg shadow-rose-500/30">
+                            <x-icon name="calendar" class="w-5 h-5 stroke-[2.5]" />
+                        </div>
+                        <div>
+                            <h3 class="font-outfit font-black text-lg text-slate-800 dark:text-slate-100 tracking-tight">Pilih Tanggal Merah</h3>
+                            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 font-jakarta">Klik tanggal untuk tandai libur tersebar dalam setahun, lalu simpan sekaligus.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ route('hari-libur.index', ['tahun' => $tahun - 1]) }}"
+                           class="w-9 h-9 inline-flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
+                            <x-icon name="arrow-left" class="w-4 h-4 stroke-[2.5]" />
+                        </a>
+                        <span class="font-outfit font-black text-lg text-slate-800 dark:text-slate-100 w-16 text-center">{{ $tahun }}</span>
+                        <a href="{{ route('hari-libur.index', ['tahun' => $tahun + 1]) }}"
+                           class="w-9 h-9 inline-flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
+                            <x-icon name="arrow-right" class="w-4 h-4 stroke-[2.5]" />
+                        </a>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-4 mb-5 text-[11px] font-bold font-jakarta text-slate-500 dark:text-slate-400">
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-500"></span> Sudah libur</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-slate-300 dark:bg-slate-600"></span> Libur rutin</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border-2 border-rose-400"></span> Dipilih</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    @for ($bulan = 1; $bulan <= 12; $bulan++)
+                        @php
+                            $awalBulan = \Illuminate\Support\Carbon::createFromDate($tahun, $bulan, 1);
+                            $jumlahHari = $awalBulan->daysInMonth;
+                            $offset = $awalBulan->dayOfWeek;
+                        @endphp
+                        <div class="rounded-2xl border border-slate-200/50 dark:border-slate-700/50 p-3">
+                            <p class="text-center font-lexend font-black text-xs uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">{{ $awalBulan->translatedFormat('F') }}</p>
+                            <div class="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-1">
+                                @foreach (['M', 'S', 'S', 'R', 'K', 'J', 'S'] as $h)
+                                    <span>{{ $h }}</span>
+                                @endforeach
+                            </div>
+                            <div class="grid grid-cols-7 gap-1">
+                                @for ($i = 0; $i < $offset; $i++)
+                                    <span></span>
+                                @endfor
+                                @for ($tgl = 1; $tgl <= $jumlahHari; $tgl++)
+                                    @php
+                                        $tanggalObj = \Illuminate\Support\Carbon::createFromDate($tahun, $bulan, $tgl);
+                                        $dateStr = $tanggalObj->toDateString();
+                                        $sudahLibur = isset($tanggalLiburTahunIni[$dateStr]);
+                                        $liburRutin = in_array($tanggalObj->dayOfWeek, $hariLiburMingguan, true);
+                                    @endphp
+                                    @if ($sudahLibur)
+                                        <span class="aspect-square flex items-center justify-center rounded-lg bg-rose-500 text-white text-[10px] font-bold font-lexend" title="Sudah libur">{{ $tgl }}</span>
+                                    @elseif ($liburRutin)
+                                        <span class="aspect-square flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 text-[10px] font-bold font-lexend" title="Libur rutin">{{ $tgl }}</span>
+                                    @else
+                                        <label class="aspect-square flex items-center justify-center rounded-lg text-[10px] font-bold font-lexend cursor-pointer border border-transparent hover:bg-rose-50 dark:hover:bg-rose-900/20"
+                                               :class="selected.includes('{{ $dateStr }}') ? 'bg-rose-100 dark:bg-rose-900/40 border-rose-400 text-rose-700 dark:text-rose-300' : 'text-slate-600 dark:text-slate-300'">
+                                            <input type="checkbox" value="{{ $dateStr }}" x-model="selected" class="sr-only">
+                                            {{ $tgl }}
+                                        </label>
+                                    @endif
+                                @endfor
+                            </div>
+                        </div>
+                    @endfor
+                </div>
+
+                <div x-show="selected.length > 0" x-cloak
+                     x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+                     class="mt-5 flex flex-wrap items-center gap-4 rounded-2xl p-4 bg-gradient-to-r from-rose-500/5 via-orange-500/5 to-rose-500/5 border border-rose-200/50 dark:border-rose-800/30">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-rose-500 text-white font-black font-lexend flex items-center justify-center text-sm">
+                            <span x-text="selected.length"></span>
+                        </div>
+                        <span class="font-outfit font-black text-sm text-slate-800 dark:text-slate-100">Tanggal Dipilih</span>
+                    </div>
+                    <input type="text" x-model="keteranganBulk" placeholder="Keterangan (opsional, berlaku utk semua)"
+                           class="flex-1 min-w-[200px] rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-rose-500 focus:ring-rose-500/30 px-4 py-2">
+                    <x-confirm-form :action="route('hari-libur.storeBulk')" method="POST"
+                                     title="Simpan tanggal libur terpilih?"
+                                     message="Semua tanggal yang dipilih akan ditambahkan sebagai hari libur."
+                                     confirm-label="Simpan"
+                                     trigger-class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-orange-600 hover:from-rose-400 hover:to-orange-500 text-white font-black font-lexend text-[10px] uppercase tracking-wider shadow-lg shadow-rose-500/20 transition-all duration-300 transform active:scale-95">
+                        <x-slot:fields>
+                            <template x-for="tgl in selected" :key="tgl">
+                                <input type="hidden" name="tanggal[]" :value="tgl">
+                            </template>
+                            <input type="hidden" name="keterangan" :value="keteranganBulk">
+                        </x-slot:fields>
+                        <x-icon name="check" class="w-3.5 h-3.5 stroke-[2.5]" /> Simpan
+                    </x-confirm-form>
+                    <button type="button" @click="selected = []" class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-lexend font-bold text-xs uppercase tracking-wider transition-colors">Batal</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </x-app-layout>
