@@ -325,7 +325,7 @@
                                     $icon = '!';
                                 } elseif (in_array($status, ['izin', 'sakit'])) {
                                     $nodeClasses .= 'bg-purple-500 border-purple-400 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]';
-                                    $icon = 'i';
+                                    $icon = $status === 'sakit' ? 'S' : 'I';
                                 } elseif ($status === 'alpha') {
                                     $nodeClasses .= 'bg-rose-500 border-rose-400 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]';
                                     $icon = '×';
@@ -340,7 +340,7 @@
                             if ($hari['isToday'] && $status) {
                                 if ($status === 'hadir') $icon = '✓';
                                 elseif ($status === 'terlambat') $icon = '!';
-                                elseif (in_array($status, ['izin', 'sakit'])) $icon = 'i';
+                                elseif (in_array($status, ['izin', 'sakit'])) $icon = $status === 'sakit' ? 'S' : 'I';
                                 elseif ($status === 'alpha') $icon = '×';
                             }
                         @endphp
