@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\SiswaAuth;
 
+use App\Models\Siswa;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -35,7 +36,15 @@ class SiswaLoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::guard('siswa')->attempt($this->only('username', 'password'), $this->boolean('remember'))) {
+        // Form login berlabel "Username / NIS" karena siswa gampang lupa
+        // username yang cuma dibuat sekali saat registrasi, sementara NIS
+        // selalu mereka ingat -- jadi cari siswanya lewat salah satu dari
+        // dua kolom itu, baru attempt login pakai id siswa yang ditemukan.
+        $siswa = Siswa::where('username', $this->input('username'))
+            ->orWhere('nis', $this->input('username'))
+            ->first();
+
+        if (! $siswa || ! Auth::guard('siswa')->attempt(['id' => $siswa->id, 'password' => $this->input('password')], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
