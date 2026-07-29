@@ -91,7 +91,7 @@
                             ['route' => 'siswa.dashboard', 'match' => 'siswa.dashboard', 'icon' => 'home', 'label' => 'Beranda'],
                             ['route' => 'siswa.absen', 'match' => 'siswa.absen*', 'icon' => 'camera', 'label' => 'Absen', 'disabled' => $absenNavNonaktif],
                             ['route' => 'siswa.riwayat', 'match' => 'siswa.riwayat', 'icon' => 'calendar', 'label' => 'Riwayat'],
-                            ['route' => 'siswa.izin', 'match' => 'siswa.izin*', 'icon' => 'alert-circle', 'label' => 'Izin'],
+                            ['route' => 'siswa.izin', 'match' => 'siswa.izin*', 'icon' => 'clipboard-list', 'label' => 'Izin'],
                             ['route' => 'siswa.wajah', 'match' => ['siswa.wajah', 'siswa.enroll.*'], 'icon' => 'user-circle', 'label' => 'Wajah'],
                         ];
                     @endphp
