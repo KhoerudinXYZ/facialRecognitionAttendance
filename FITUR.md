@@ -62,6 +62,42 @@ dikerjakan malam itu:
 
 ---
 
+## Ditambahkan Hari Ini (2026-07-28 malam s.d. 2026-07-29)
+
+Sesi deploy Railway pertama kali live + perbaikan bug yang ketemu dari
+testing manual langsung di domain produksi:
+
+1. **Email production pindah dari SMTP ke Resend (HTTP API)** — Mailtrap
+   (testing) lalu Gmail SMTP ternyata sama-sama macet ~30 detik lalu
+   fatal error di Railway: platform ini memblokir semua trafik SMTP
+   keluar (kebijakan anti-abuse PaaS), bukan masalah konfigurasi
+   per-provider. Pindah ke Resend (kirim lewat HTTPS, bukan port SMTP)
+   menyelesaikannya. Verifikasi domain di Resend masih pending — sebelum
+   itu selesai, email cuma bisa terkirim ke satu alamat sandbox
+   (alamat akun Resend itu sendiri), belum ke email orang tua sungguhan.
+2. **Fix login siswa gagal setelah reset password** — form login
+   berlabel "Username / NIS" tapi backend cuma cek kolom `username`
+   (dibuat sekali saat registrasi, gampang lupa), tidak pernah fallback
+   ke NIS. Sekarang bisa login pakai NIS atau username.
+3. **Ikon "terlambat" vs "izin/sakit" dibedakan** di grafik "Perjalanan
+   Minggu Ini" (dashboard siswa) — huruf "i" kecil nyaris identik
+   bentuknya dengan tanda seru di font bold ukuran kecil, bikin dua
+   status kelihatan sama walau beda warna. Diganti jadi huruf S (sakit)
+   dan I (izin).
+4. **Ikon menu "Izin" di navbar siswa diganti** — sebelumnya
+   `alert-circle` (lingkaran+seru), bentuknya sama persis dengan ikon
+   status "terlambat" di dashboard, cuma beda warna. Diganti jadi
+   `clipboard-list` (ikon formulir) yang juga lebih pas secara makna.
+5. **Kalender Tahunan "Pilih Tanggal Merah"** di halaman Hari Libur —
+   sebelumnya admin cuma bisa tambah libur lewat rentang tanggal
+   berurutan (dari-sampai), merepotkan untuk tanggal-tanggal libur
+   nasional yang tersebar sepanjang tahun. Sekarang ada tampilan
+   kalender 12 bulan per tahun, admin tinggal klik tanggal mana saja
+   yang mau ditandai libur (termasuk yang tersebar, bukan cuma
+   berurutan), lalu simpan sekaligus dalam satu submit.
+
+---
+
 ## Portal Siswa (`/portal/...`)
 
 - **Registrasi mandiri** — klaim akun lewat NIS (nomor induk siswa yang
@@ -115,8 +151,10 @@ Akses dibedakan by role: **admin** (akses penuh) vs **wali kelas**
   diubah admin) dan memperbarui baris absensi dalam satu aksi.
 - **Laporan** — export rekap ke Excel & PDF, dengan scoping kelas binaan
   buat wali kelas.
-- **Hari Libur** — tanggal libur manual (rentang tanggal sekaligus) plus
-  hari libur mingguan otomatis berulang (mis. Sabtu-Minggu).
+- **Hari Libur** — tanggal libur manual, bisa lewat rentang tanggal
+  sekaligus (dari-sampai) atau lewat kalender tahunan (klik
+  tanggal-tanggal tersebar, simpan sekaligus), plus hari libur mingguan
+  otomatis berulang (mis. Sabtu-Minggu).
 - **Pengaturan** — jam masuk/batas terlambat/mulai pulang/jam cek belum
   hadir, verifikasi lokasi GPS (titik sekolah + radius, dengan peta
   interaktif), simulasi waktu (testing, disembunyikan dari UI produksi),
@@ -135,7 +173,9 @@ Akses dibedakan by role: **admin** (akses penuh) vs **wali kelas**
 - **Notifikasi WhatsApp (Fonnte)** — kanal prioritas, dengan retry
   otomatis kalau gagal; email jadi cadangan.
 - **Email antrian** (`QUEUE_CONNECTION=database`) — dikirim async lewat
-  queue worker, dengan retry & backoff kalau SMTP gagal sesaat.
+  queue worker, dengan retry & backoff kalau gagal sesaat. Transport
+  produksi lewat Resend (HTTP API), bukan SMTP mentah — Railway
+  memblokir trafik SMTP keluar.
 - **Backup terjadwal** (`spatie/laravel-backup`) — dump database +
   storage foto siswa, dibersihkan & dipantau otomatis.
 - Semua di atas dijadwalkan lewat `routes/console.php`
