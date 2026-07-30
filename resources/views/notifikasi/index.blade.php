@@ -104,9 +104,14 @@
                                             Tanpa Kontak
                                         </span>
                                     @else
-                                        <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md bg-amber-500 text-white shadow-amber-500/30">
+                                        <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md bg-amber-500 text-white shadow-amber-500/30" title="{{ $entry->alasan_gagal }}">
                                             Gagal
                                         </span>
+                                        @if ($entry->alasan_gagal)
+                                            <span class="block mt-1 text-[10px] font-jakarta font-semibold text-slate-400 dark:text-slate-500 max-w-[16rem] truncate mx-auto">
+                                                {{ $entry->alasan_gagal }}
+                                            </span>
+                                        @endif
                                     @endif
                                 </td>
                             </tr>

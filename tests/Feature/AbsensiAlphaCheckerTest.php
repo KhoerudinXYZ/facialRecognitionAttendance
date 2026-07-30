@@ -125,7 +125,23 @@ class AbsensiAlphaCheckerTest extends TestCase
             'jenis' => 'alpha',
             'kanal' => 'whatsapp',
             'status' => 'gagal',
+            'alasan_gagal' => 'device offline',
         ]);
+    }
+
+    public function test_alasan_gagal_dari_respons_non_json_tetap_tercatat(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        Http::fake(['api.fonnte.com/*' => Http::response('<html>Bad Gateway</html>', 502)]);
+        Carbon::setTestNow('2026-07-13 20:00:00');
+        $siswa = $this->siswa(['no_hp_orang_tua' => '081234567890']);
+
+        app(AbsensiAlphaChecker::class)->jalankan();
+
+        $log = \App\Models\NotifikasiAbsensiLog::where('siswa_id', $siswa->id)->where('jenis', 'alpha')->first();
+        $this->assertSame('gagal', $log->status);
+        $this->assertStringContainsString('502', $log->alasan_gagal);
     }
 
     public function test_notifikasi_alpha_yang_gagal_dicoba_ulang_di_run_berikutnya(): void

@@ -13,6 +13,7 @@ class WhatsAppGagalBeruntunMail extends Mailable
 
     public function __construct(
         public int $jumlahGagalBeruntun,
+        public ?string $alasanTerakhir = null,
     ) {
     }
 

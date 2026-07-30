@@ -17,6 +17,7 @@ class NotifikasiAbsensiLog extends Model
         'kontak',
         'pesan',
         'status',
+        'alasan_gagal',
     ];
 
     protected $casts = [

@@ -9,6 +9,12 @@
         Fonnte bermasalah.
     </p>
 
+    @if ($alasanTerakhir)
+        <p style="background: #fef3c7; padding: 12px 16px; border-radius: 8px;">
+            Alasan gagal terakhir dari Fonnte: <strong>{{ $alasanTerakhir }}</strong>
+        </p>
+    @endif
+
     <p>
         Selama ini belum diperbaiki, orang tua siswa <strong>tidak menerima peringatan
         belum hadir maupun alpha</strong> lewat WhatsApp.

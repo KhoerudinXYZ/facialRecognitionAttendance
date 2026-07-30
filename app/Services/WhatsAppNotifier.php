@@ -6,9 +6,11 @@ use App\Mail\WhatsAppGagalBeruntunMail;
 use App\Models\NotifikasiAbsensiLog;
 use App\Models\Siswa;
 use App\Models\User;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -67,7 +69,8 @@ class WhatsAppNotifier
             return false;
         }
 
-        $status = $this->kirim($token, $nomor, $pesan) ? 'terkirim' : 'gagal';
+        [$berhasil, $alasanGagal] = $this->kirim($token, $nomor, $pesan);
+        $status = $berhasil ? 'terkirim' : 'gagal';
 
         NotifikasiAbsensiLog::create([
             'siswa_id' => $siswa->id,
@@ -78,6 +81,7 @@ class WhatsAppNotifier
             'kontak' => $nomor,
             'pesan' => $pesan,
             'status' => $status,
+            'alasan_gagal' => $alasanGagal,
         ]);
 
         if ($status === 'gagal') {
@@ -118,6 +122,11 @@ class WhatsAppNotifier
             return;
         }
 
+        $alasanTerakhir = NotifikasiAbsensiLog::where('kanal', 'whatsapp')
+            ->where('status', 'gagal')
+            ->latest('id')
+            ->value('alasan_gagal');
+
         $emailAdmin = User::where('role', 'admin')->pluck('email');
 
         try {
@@ -125,7 +134,7 @@ class WhatsAppNotifier
             // kalau-kalau queue worker yang bermasalah (bukan cuma Fonnte),
             // jadi sengaja tidak bergantung pada queue worker jalan.
             foreach ($emailAdmin as $email) {
-                Mail::to($email)->send(new WhatsAppGagalBeruntunMail(self::AMBANG_GAGAL_BERUNTUN));
+                Mail::to($email)->send(new WhatsAppGagalBeruntunMail(self::AMBANG_GAGAL_BERUNTUN, $alasanTerakhir));
             }
         } catch (Throwable) {
             // Gagal kirim alert tidak boleh mengganggu alur utama (absen
@@ -133,7 +142,10 @@ class WhatsAppNotifier
         }
     }
 
-    private function kirim(string $token, string $nomor, string $pesan): bool
+    /**
+     * @return array{0: bool, 1: ?string} [berhasil, alasan gagal (null kalau berhasil)]
+     */
+    private function kirim(string $token, string $nomor, string $pesan): array
     {
         try {
             // retry(3, 500): 3 percobaan total (1 awal + 2 ulang), jeda
@@ -152,10 +164,32 @@ class WhatsAppNotifier
                     'message' => $pesan,
                 ]);
 
-            return $response->successful() && $response->json('status') === true;
-        } catch (Throwable) {
-            return false;
+            if ($response->successful() && $response->json('status') === true) {
+                return [true, null];
+            }
+
+            return [false, $this->alasanGagalDariRespons($response)];
+        } catch (Throwable $e) {
+            return [false, Str::limit($e->getMessage(), 255)];
         }
+    }
+
+    /**
+     * Fonnte biasanya menyertakan 'reason' di body JSON kalau status
+     * gagal (lihat test WhatsAppNotifier) -- tapi kalau responsnya bukan
+     * JSON sama sekali (mis. gateway error, HTML error page), jatuh balik
+     * ke ringkasan kode HTTP + potongan body mentah supaya tetap ada
+     * sesuatu yang berguna buat admin, bukan kosong.
+     */
+    private function alasanGagalDariRespons(Response $response): string
+    {
+        $alasan = $response->json('reason') ?? $response->json('message');
+
+        if ($alasan) {
+            return Str::limit((string) $alasan, 255);
+        }
+
+        return Str::limit("HTTP {$response->status()}: {$response->body()}", 255);
     }
 
     /**
