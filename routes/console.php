@@ -28,7 +28,13 @@ Artisan::command('absensi:cek-belum-hadir', function (AbsensiBelumHadirChecker $
 // dipanggil sesering ini. Perlu cron beneran di server
 // (`* * * * * php artisan schedule:run`) supaya ini benar-benar berjalan
 // otomatis — tanpa itu, jalankan manual: `php artisan absensi:cek-alpha`.
-Schedule::command('absensi:cek-alpha')->hourly()->between('12:00', '22:00');
+// withoutOverlapping(): jaring pengaman kalau suatu saat jumlah siswa
+// membengkak jauh (lihat diskusi 2026-07-30) sampai satu run makan waktu
+// lebih dari sejam -- tanpa ini, scheduler tetap akan meluncurkan proses
+// baru tiap jam biarpun proses sebelumnya belum selesai, yang berarti dua
+// proses sekaligus menghajar Fonnte barengan (pola burst yang justru mau
+// dihindari lewat jeda_kirim_ms).
+Schedule::command('absensi:cek-alpha')->hourly()->between('12:00', '22:00')->withoutOverlapping();
 
 // Beda dari alpha di atas: ini peringatan DINI (siswa mungkin masih dalam
 // perjalanan), jadi telat sampai 1 jam (seperti alpha) mengurangi gunanya
@@ -38,7 +44,10 @@ Schedule::command('absensi:cek-alpha')->hourly()->between('12:00', '22:00');
 // absensi_log, tapi window ini menghindari polling sia-sia sepanjang hari.
 // Diam-diam tidak melakukan apa pun kalau Pengaturan::jam_cek_belum_hadir
 // belum diisi admin (lihat Pengaturan::cekBelumHadirAktif()).
-Schedule::command('absensi:cek-belum-hadir')->everyTenMinutes()->between('07:00', '11:00');
+// withoutOverlapping(): sama alasannya kayak cek-alpha di atas -- makin
+// relevan di sini karena jadwalnya rapat (tiap 10 menit), jadi run yang
+// kepanjangan jauh lebih gampang numpuk dibanding yang jam-jaman.
+Schedule::command('absensi:cek-belum-hadir')->everyTenMinutes()->between('07:00', '11:00')->withoutOverlapping();
 
 // Backup harian (spatie/laravel-backup): dump database + storage/app/public
 // (foto siswa yang diupload). clean lebih dulu supaya monitor menilai ukuran
