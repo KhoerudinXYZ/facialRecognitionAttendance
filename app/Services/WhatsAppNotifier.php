@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Mail\WhatsAppGagalBeruntunMail;
 use App\Models\NotifikasiAbsensiLog;
 use App\Models\Siswa;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 /**
@@ -28,6 +31,14 @@ use Throwable;
  */
 class WhatsAppNotifier
 {
+    // Bukan email fallback ke orang tua (sengaja dihindari -- lihat docblock
+    // kelas ini & WhatsAppGagalBeruntunMail: kalau device Fonnte mati total,
+    // fallback ke email berarti SEMUA orang tua kebanjiran email sekaligus,
+    // bisa menghabiskan kuota harian Resend). Ini cuma alert internal ke
+    // admin supaya device yang terputus ketahuan hari itu juga, bukan pas
+    // admin kebetulan buka halaman notifikasi.
+    private const AMBANG_GAGAL_BERUNTUN = 5;
+
     public function kirimDanCatat(Siswa $siswa, Carbon $tanggal, string $jenis, string $pesan): bool
     {
         $token = config('services.fonnte.token');
@@ -56,6 +67,8 @@ class WhatsAppNotifier
             return false;
         }
 
+        $status = $this->kirim($token, $nomor, $pesan) ? 'terkirim' : 'gagal';
+
         NotifikasiAbsensiLog::create([
             'siswa_id' => $siswa->id,
             'siswa_nama' => $siswa->nama,
@@ -64,10 +77,60 @@ class WhatsAppNotifier
             'kanal' => 'whatsapp',
             'kontak' => $nomor,
             'pesan' => $pesan,
-            'status' => $this->kirim($token, $nomor, $pesan) ? 'terkirim' : 'gagal',
+            'status' => $status,
         ]);
 
+        if ($status === 'gagal') {
+            $this->peringatkanAdminJikaGagalBeruntun();
+        }
+
         return true;
+    }
+
+    /**
+     * Kirim satu email peringatan ke admin persis saat streak gagal
+     * MENCAPAI ambang -- bukan tiap kali "N terakhir semuanya gagal" (yang
+     * tetap true untuk setiap kegagalan berikutnya begitu streak sudah lewat
+     * ambang). Makanya ambil (ambang + 1) baris terakhir: kalau baris ke-
+     * (ambang+1) dari belakang JUGA gagal, berarti streak-nya sudah lebih
+     * panjang dari ambang sebelum kegagalan ini terjadi, dan alert sudah
+     * dikirim pas streak baru pertama kali mencapai ambang -- jangan kirim
+     * lagi. Tanpa perlu tabel/flag terpisah buat menandai "sudah pernah
+     * diperingatkan", dan otomatis reset begitu ada satu pengiriman sukses
+     * yang mematahkan streak-nya.
+     */
+    private function peringatkanAdminJikaGagalBeruntun(): void
+    {
+        $ambang = self::AMBANG_GAGAL_BERUNTUN;
+
+        $statusTerbaru = NotifikasiAbsensiLog::where('kanal', 'whatsapp')
+            ->latest('id')
+            ->limit($ambang + 1)
+            ->pluck('status');
+
+        $streakTerbaru = $statusTerbaru->take($ambang);
+
+        if ($streakTerbaru->count() < $ambang || $streakTerbaru->contains(fn ($s) => $s !== 'gagal')) {
+            return;
+        }
+
+        if ($statusTerbaru->get($ambang) === 'gagal') {
+            return;
+        }
+
+        $emailAdmin = User::where('role', 'admin')->pluck('email');
+
+        try {
+            // ->send() bukan ->queue(): alert ini justru harus tetap terkirim
+            // kalau-kalau queue worker yang bermasalah (bukan cuma Fonnte),
+            // jadi sengaja tidak bergantung pada queue worker jalan.
+            foreach ($emailAdmin as $email) {
+                Mail::to($email)->send(new WhatsAppGagalBeruntunMail(self::AMBANG_GAGAL_BERUNTUN));
+            }
+        } catch (Throwable) {
+            // Gagal kirim alert tidak boleh mengganggu alur utama (absen
+            // masuk / penandaan alpha / peringatan dini) yang memanggil ini.
+        }
     }
 
     private function kirim(string $token, string $nomor, string $pesan): bool
