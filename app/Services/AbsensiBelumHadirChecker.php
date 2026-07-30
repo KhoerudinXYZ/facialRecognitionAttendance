@@ -71,9 +71,24 @@ class AbsensiBelumHadirChecker
 
         foreach ($siswaBelumHadir as $siswa) {
             $this->notifikasi($siswa, $today, $pengaturan->jam_cek_belum_hadir);
+            $this->jedaAntarKirim();
         }
 
         return $siswaBelumHadir->count();
+    }
+
+    /**
+     * Jeda antar pengiriman WA -- lihat services.fonnte.jeda_kirim_ms &
+     * komentar sama di AbsensiAlphaChecker. Cuma relevan kalau WA memang
+     * aktif (token diisi); jeda_kirim_ms 0 (default di test) skip total.
+     */
+    private function jedaAntarKirim(): void
+    {
+        $ms = (int) config('services.fonnte.jeda_kirim_ms', 0);
+
+        if ($ms > 0 && config('services.fonnte.token')) {
+            usleep($ms * 1000);
+        }
     }
 
     private function notifikasi(Siswa $siswa, Carbon $tanggal, string $jamCek): void

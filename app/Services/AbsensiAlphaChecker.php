@@ -68,6 +68,7 @@ class AbsensiAlphaChecker
             ]);
 
             $this->notifikasi($siswa, $today);
+            $this->jedaAntarKirim();
         }
 
         // Beda dari $siswaBelumAbsen di atas: siswa di sini SUDAH resmi
@@ -81,9 +82,25 @@ class AbsensiAlphaChecker
         // cuma satu kali kesempatan lalu diam selamanya.
         foreach ($this->siswaAlphaPerluDiulang($today, $siswaBelumAbsen->pluck('id')) as $siswa) {
             $this->notifikasi($siswa, $today);
+            $this->jedaAntarKirim();
         }
 
         return $siswaBelumAbsen->count();
+    }
+
+    /**
+     * Jeda antar pengiriman WA -- lihat services.fonnte.jeda_kirim_ms.
+     * Cuma relevan kalau WA memang aktif (token diisi); kalau tidak, tidak
+     * ada percobaan HTTP sama sekali jadi tidak ada apa pun buat dijaga
+     * jaraknya. jeda_kirim_ms 0 (default di test) skip total.
+     */
+    private function jedaAntarKirim(): void
+    {
+        $ms = (int) config('services.fonnte.jeda_kirim_ms', 0);
+
+        if ($ms > 0 && config('services.fonnte.token')) {
+            usleep($ms * 1000);
+        }
     }
 
     /**

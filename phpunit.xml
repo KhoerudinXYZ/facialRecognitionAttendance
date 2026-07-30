@@ -35,6 +35,8 @@
              yang menghitung jumlah baris. -->
         <env name="FONNTE_TOKEN" value=""/>
         <env name="FONNTE_KEHADIRAN_AKTIF" value="false"/>
+        <!-- 0 supaya test suite tidak ikut menunggu jeda antar-kirim beneran. -->
+        <env name="FONNTE_JEDA_KIRIM_MS" value="0"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

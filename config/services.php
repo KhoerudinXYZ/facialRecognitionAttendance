@@ -42,6 +42,13 @@ return [
         // tiap pagi) sengaja dikunci di belakang toggle terpisah ini supaya
         // nomor WhatsApp "menghangat" dulu sebelum dipakai volume tinggi.
         'kehadiran_aktif' => env('FONNTE_KEHADIRAN_AKTIF', false),
+        // Jeda antar pengiriman WA saat AbsensiAlphaChecker/AbsensiBelumHadirChecker
+        // memproses BANYAK siswa dalam satu run -- kirim bertubi-tubi ke banyak
+        // nomor berbeda dalam hitungan detik adalah pola yang bisa membuat
+        // WhatsApp/Fonnte men-disconnect device (lihat insiden 2026-07-30).
+        // Tidak berlaku buat notifikasi kehadiran real-time per siswa
+        // (AbsensiRecorder) -- itu satu request per siswa, bukan burst.
+        'jeda_kirim_ms' => env('FONNTE_JEDA_KIRIM_MS', 1500),
     ],
 
 ];
