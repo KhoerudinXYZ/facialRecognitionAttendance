@@ -9,6 +9,7 @@ use App\Models\NotifikasiAbsensiLog;
 use App\Models\Pengaturan;
 use App\Models\Siswa;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
@@ -69,7 +70,46 @@ class AbsensiAlphaChecker
             $this->notifikasi($siswa, $today);
         }
 
+        // Beda dari $siswaBelumAbsen di atas: siswa di sini SUDAH resmi
+        // alpha (baris absensi-nya sudah ada dari run sebelumnya -- bukan
+        // yang baru saja ditandai barusan di loop atas, makanya dikecualikan
+        // lewat $siswaBelumAbsen->pluck('id'), supaya siswa yang baru gagal
+        // di loop atas tidak langsung dicoba ulang lagi di run yang sama),
+        // jadi tidak lolos whereDoesntHave('absensi') lagi -- perlu query
+        // terpisah supaya notifikasi yang gagal (mis. Fonnte disconnect)
+        // dicoba ulang di run berikutnya begitu channel-nya pulih, alih-alih
+        // cuma satu kali kesempatan lalu diam selamanya.
+        foreach ($this->siswaAlphaPerluDiulang($today, $siswaBelumAbsen->pluck('id')) as $siswa) {
+            $this->notifikasi($siswa, $today);
+        }
+
         return $siswaBelumAbsen->count();
+    }
+
+    /**
+     * Siswa yang tanggal ini semua percobaan notifikasi 'alpha'-nya gagal
+     * (belum pernah sukses lewat kanal manapun) -- retry-nya menghasilkan
+     * baris log baru tiap kali, jadi begitu salah satu akhirnya berhasil,
+     * siswa itu otomatis tidak muncul lagi di sini pada run selanjutnya.
+     * $idBaruDitandai dikecualikan supaya siswa yang baru saja gagal di
+     * loop $siswaBelumAbsen pada run YANG SAMA tidak langsung diulang lagi
+     * detik itu juga -- retry-nya baru berlaku mulai run berikutnya.
+     */
+    private function siswaAlphaPerluDiulang(Carbon $today, Collection $idBaruDitandai): Collection
+    {
+        $sudahFinal = NotifikasiAbsensiLog::whereDate('tanggal', $today)
+            ->where('jenis', 'alpha')
+            ->where('status', '!=', 'gagal')
+            ->pluck('siswa_id');
+
+        $pernahGagal = NotifikasiAbsensiLog::whereDate('tanggal', $today)
+            ->where('jenis', 'alpha')
+            ->where('status', 'gagal')
+            ->pluck('siswa_id');
+
+        $perluDiulang = $pernahGagal->diff($sudahFinal)->diff($idBaruDitandai);
+
+        return Siswa::whereIn('id', $perluDiulang)->get();
     }
 
     private function notifikasi(Siswa $siswa, Carbon $tanggal): void

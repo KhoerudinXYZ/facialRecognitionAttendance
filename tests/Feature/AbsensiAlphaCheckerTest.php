@@ -128,6 +128,51 @@ class AbsensiAlphaCheckerTest extends TestCase
         ]);
     }
 
+    public function test_notifikasi_alpha_yang_gagal_dicoba_ulang_di_run_berikutnya(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        // 3 respons gagal pertama habis dipakai oleh retry(3,...) internal
+        // di run pertama; respons ke-4 (sukses) dipakai run kedua, mensimulasikan
+        // Fonnte pulih sebelum cek alpha jam berikutnya.
+        Http::fake(['api.fonnte.com/*' => Http::sequence()
+            ->push(['status' => false], 500)
+            ->push(['status' => false], 500)
+            ->push(['status' => false], 500)
+            ->push(['status' => true], 200)]);
+        Carbon::setTestNow('2026-07-13 20:00:00');
+        $siswa = $this->siswa(['no_hp_orang_tua' => '081234567890']);
+
+        $jumlahPertama = app(AbsensiAlphaChecker::class)->jalankan();
+
+        $this->assertSame(1, $jumlahPertama);
+        $this->assertSame(1, Absensi::where('siswa_id', $siswa->id)->count());
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'status' => 'gagal',
+        ]);
+        Http::assertSentCount(3);
+
+        // Siswa yang sudah resmi alpha (baris absensi sudah ada) TIDAK
+        // ditandai ulang, tapi notifikasinya harus dicoba ulang karena
+        // belum pernah berhasil.
+        $jumlahKedua = app(AbsensiAlphaChecker::class)->jalankan();
+
+        $this->assertSame(0, $jumlahKedua); // bukan siswa baru yang ditandai alpha
+        $this->assertSame(1, Absensi::where('siswa_id', $siswa->id)->count()); // tidak dobel
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'status' => 'terkirim',
+        ]);
+        Http::assertSentCount(4);
+
+        // Run ketiga: sudah berhasil, tidak boleh dikirim ulang lagi.
+        app(AbsensiAlphaChecker::class)->jalankan();
+        Http::assertSentCount(4);
+    }
+
     public function test_siswa_tanpa_email_orang_tua_tetap_ditandai_alpha_tapi_notifikasi_dicatat_tidak_ada_kontak(): void
     {
         Mail::fake();

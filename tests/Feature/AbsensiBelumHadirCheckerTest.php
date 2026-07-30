@@ -215,6 +215,43 @@ class AbsensiBelumHadirCheckerTest extends TestCase
         Mail::assertNothingOutgoing();
     }
 
+    public function test_notifikasi_yang_gagal_dicoba_ulang_di_run_berikutnya(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        // 3 respons gagal pertama habis dipakai oleh retry(3,...) internal
+        // di run pertama; respons ke-4 (sukses) dipakai run kedua, mensimulasikan
+        // Fonnte pulih sebelum run 10-menitan berikutnya.
+        Http::fake(['api.fonnte.com/*' => Http::sequence()
+            ->push(['status' => false], 500)
+            ->push(['status' => false], 500)
+            ->push(['status' => false], 500)
+            ->push(['status' => true], 200)]);
+        Pengaturan::get()->update(['jam_cek_belum_hadir' => '09:30']);
+        Carbon::setTestNow('2026-07-13 09:30:00');
+        $siswa = $this->siswa(['no_hp_orang_tua' => '081234567890']);
+
+        $jumlahPertama = app(AbsensiBelumHadirChecker::class)->jalankan();
+
+        $this->assertSame(1, $jumlahPertama);
+        Http::assertSentCount(3);
+
+        $jumlahKedua = app(AbsensiBelumHadirChecker::class)->jalankan();
+
+        $this->assertSame(1, $jumlahKedua);
+        Http::assertSentCount(4);
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'belum_hadir',
+            'status' => 'terkirim',
+        ]);
+
+        // Run ketiga: sudah berhasil, tidak boleh dikirim ulang lagi.
+        $jumlahKetiga = app(AbsensiBelumHadirChecker::class)->jalankan();
+        $this->assertSame(0, $jumlahKetiga);
+        Http::assertSentCount(4);
+    }
+
     public function test_email_tetap_terkirim_kalau_siswa_tidak_punya_nomor_wa_walau_kanal_wa_aktif(): void
     {
         Mail::fake();

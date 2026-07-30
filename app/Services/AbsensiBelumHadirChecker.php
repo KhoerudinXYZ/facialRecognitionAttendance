@@ -53,8 +53,14 @@ class AbsensiBelumHadirChecker
             return 0;
         }
 
+        // status != 'gagal' (bukan "punya baris log sama sekali") supaya
+        // siswa yang percobaan sebelumnya gagal (mis. Fonnte lagi disconnect)
+        // otomatis dicoba ulang di run 10-menitan berikutnya begitu channel-nya
+        // pulih, bukan dianggap "sudah selesai" selamanya cuma karena pernah
+        // gagal sekali.
         $sudahDinotifikasi = NotifikasiAbsensiLog::whereDate('tanggal', $today)
             ->where('jenis', 'belum_hadir')
+            ->where('status', '!=', 'gagal')
             ->pluck('siswa_id');
 
         $siswaBelumHadir = Siswa::where('is_active', true)
