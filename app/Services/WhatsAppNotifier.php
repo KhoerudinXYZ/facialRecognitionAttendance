@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
@@ -173,9 +174,13 @@ class WhatsAppNotifier
             foreach ($emailAdmin as $email) {
                 Mail::to($email)->send(new WhatsAppGagalBeruntunMail(self::AMBANG_GAGAL_BERUNTUN, $alasanTerakhir));
             }
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             // Gagal kirim alert tidak boleh mengganggu alur utama (absen
-            // masuk / penandaan alpha / peringatan dini) yang memanggil ini.
+            // masuk / penandaan alpha / peringatan dini) yang memanggil ini,
+            // tapi harus tetap tercatat -- kalau tidak, admin justru tidak
+            // pernah tahu WA sedang bermasalah DAN alert email-nya sendiri
+            // juga gagal, tanpa jejak sama sekali.
+            Log::error('Gagal mengirim WhatsAppGagalBeruntunMail ke admin: ' . $e->getMessage());
         }
     }
 
