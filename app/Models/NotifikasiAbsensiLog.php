@@ -18,6 +18,8 @@ class NotifikasiAbsensiLog extends Model
         'pesan',
         'status',
         'alasan_gagal',
+        'fonnte_message_id',
+        'whatsapp_state',
     ];
 
     protected $casts = [

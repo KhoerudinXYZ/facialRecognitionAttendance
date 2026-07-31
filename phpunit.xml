@@ -37,6 +37,7 @@
         <env name="FONNTE_KEHADIRAN_AKTIF" value="false"/>
         <!-- 0 supaya test suite tidak ikut menunggu jeda antar-kirim beneran. -->
         <env name="FONNTE_JEDA_KIRIM_MS" value="0"/>
+        <env name="FONNTE_WEBHOOK_SECRET" value="test-secret-fonnte-webhook"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

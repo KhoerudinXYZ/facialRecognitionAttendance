@@ -49,6 +49,12 @@ return [
         // Tidak berlaku buat notifikasi kehadiran real-time per siswa
         // (AbsensiRecorder) -- itu satu request per siswa, bukan burst.
         'jeda_kirim_ms' => env('FONNTE_JEDA_KIRIM_MS', 1500),
+        // Dipasang manual di dashboard Fonnte (device->edit->Webhook Update
+        // Message Status) sebagai bagian URL: /webhooks/fonnte/{secret}.
+        // Fonnte sendiri tidak menandatangani/mengautentikasi request webhook-
+        // nya (lihat docs), jadi secret di path ini satu-satunya penghalang
+        // supaya orang lain tidak bisa mengirim update status palsu.
+        'webhook_secret' => env('FONNTE_WEBHOOK_SECRET'),
     ],
 
 ];

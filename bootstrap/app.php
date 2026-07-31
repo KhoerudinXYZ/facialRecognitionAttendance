@@ -25,6 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.siswa' => \App\Http\Middleware\EnsureSiswaAuthenticated::class,
             'guest.siswa' => \App\Http\Middleware\RedirectIfSiswaAuthenticated::class,
         ]);
+
+        // Fonnte mem-POST ke webhooks/fonnte/{secret} tanpa sesi/token CSRF
+        // (bukan browser) -- secret di path-nya sendiri yang jadi autentikasi
+        // (lihat FonnteWebhookController).
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/fonnte/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

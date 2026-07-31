@@ -69,7 +69,7 @@ class WhatsAppNotifier
             return false;
         }
 
-        [$berhasil, $alasanGagal] = $this->kirim($token, $nomor, $pesan);
+        [$berhasil, $alasanGagal, $messageId] = $this->kirim($token, $nomor, $pesan);
         $status = $berhasil ? 'terkirim' : 'gagal';
 
         NotifikasiAbsensiLog::create([
@@ -82,6 +82,7 @@ class WhatsAppNotifier
             'pesan' => $pesan,
             'status' => $status,
             'alasan_gagal' => $alasanGagal,
+            'fonnte_message_id' => $messageId,
         ]);
 
         if ($status === 'gagal') {
@@ -89,6 +90,42 @@ class WhatsAppNotifier
         }
 
         return true;
+    }
+
+    /**
+     * Dipanggil FonnteWebhookController saat Fonnte melaporkan perubahan
+     * status pesan belakangan (async, bisa menit/jam setelah kirim() awal).
+     * $state === 0 (lihat docs Fonnte "About state 0") berarti WhatsApp
+     * sendiri menolak pengiriman -- reach-out time-lock/limit reputasi
+     * nomor -- walau respons /send tadi bilang sukses. Baris log yang
+     * cocok diperbarui jadi 'gagal' supaya admin tidak dikira sudah
+     * sampai ke orang tua padahal belum. State lain (1/2/3, dst) cuma
+     * dicatat mentah di whatsapp_state, tidak mengubah status -- kita
+     * belum tahu persis artinya semua & yang benar-benar perlu ditindak
+     * cuma kegagalan (state 0).
+     */
+    public function tandaiStatusDariWebhook(string $messageId, ?int $state): void
+    {
+        $log = NotifikasiAbsensiLog::where('fonnte_message_id', $messageId)
+            ->latest('id')
+            ->first();
+
+        if (! $log) {
+            return;
+        }
+
+        $log->whatsapp_state = $state;
+
+        if ($state === 0 && $log->status !== 'gagal') {
+            $log->status = 'gagal';
+            $log->alasan_gagal = 'WhatsApp menolak pengiriman (state 0) -- kemungkinan limit pengiriman atau reputasi nomor pengirim.';
+        }
+
+        $log->save();
+
+        if ($log->status === 'gagal') {
+            $this->peringatkanAdminJikaGagalBeruntun();
+        }
     }
 
     /**
@@ -143,7 +180,7 @@ class WhatsAppNotifier
     }
 
     /**
-     * @return array{0: bool, 1: ?string} [berhasil, alasan gagal (null kalau berhasil)]
+     * @return array{0: bool, 1: ?string, 2: ?string} [berhasil, alasan gagal (null kalau berhasil), message id Fonnte (untuk cocokkan webhook status, lihat tandaiStatusDariWebhook())]
      */
     private function kirim(string $token, string $nomor, string $pesan): array
     {
@@ -165,13 +202,29 @@ class WhatsAppNotifier
                 ]);
 
             if ($response->successful() && $response->json('status') === true) {
-                return [true, null];
+                return [true, null, $this->messageIdDariRespons($response)];
             }
 
-            return [false, $this->alasanGagalDariRespons($response)];
+            return [false, $this->alasanGagalDariRespons($response), null];
         } catch (Throwable $e) {
-            return [false, Str::limit($e->getMessage(), 255)];
+            return [false, Str::limit($e->getMessage(), 255), null];
         }
+    }
+
+    /**
+     * Respons sukses /send Fonnte: {"id": ["80367170"], ...} -- array
+     * karena satu request bisa broadcast ke banyak target, tapi kirim()
+     * di sini selalu satu target per panggilan jadi ambil elemen pertama.
+     */
+    private function messageIdDariRespons(Response $response): ?string
+    {
+        $id = $response->json('id');
+
+        if (is_array($id)) {
+            return isset($id[0]) ? (string) $id[0] : null;
+        }
+
+        return $id !== null ? (string) $id : null;
     }
 
     /**

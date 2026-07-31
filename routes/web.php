@@ -3,6 +3,7 @@
 use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FaceEnrollmentController;
+use App\Http\Controllers\FonnteWebhookController;
 use App\Http\Controllers\HariLiburController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KoreksiAbsensiController;
@@ -28,6 +29,11 @@ Route::get('/', function () {
     // jadi pengunjung tamu diarahkan ke portal siswa. Staff langsung ke /login.
     return redirect()->route('siswa.login');
 });
+
+// Dipanggil server Fonnte sendiri (bukan browser siswa/staff) -- di luar
+// grup auth & dikecualikan dari CSRF (lihat bootstrap/app.php). Secret di
+// path adalah satu-satunya autentikasi, lihat FonnteWebhookController.
+Route::post('webhooks/fonnte/{secret}', FonnteWebhookController::class)->name('webhooks.fonnte');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
