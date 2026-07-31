@@ -242,32 +242,6 @@ class AbsensiRecorderTest extends TestCase
         $this->assertSame('success', $result['status']);
     }
 
-    public function test_lokasi_dikonfigurasi_dua_pembacaan_gps_identik_persis_ditolak(): void
-    {
-        Pengaturan::get()->update(['lokasi_lat' => '-6.9147000', 'lokasi_lng' => '107.6098000', 'lokasi_radius_meter' => 100]);
-        Carbon::setTestNow('2026-07-13 07:00:00');
-        $siswa = $this->siswa();
-
-        // lat_awal/lng_awal sama persis dengan lat/lng -- pola khas app
-        // fake-GPS yang menyuntik satu koordinat statis.
-        $result = app(AbsensiRecorder::class)->record($siswa, -6.9147000, 107.6098000, true, null, -6.9147000, 107.6098000);
-
-        $this->assertSame('lokasi', $result['status']);
-        $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
-    }
-
-    public function test_lokasi_dikonfigurasi_dua_pembacaan_gps_sedikit_berbeda_tetap_diterima(): void
-    {
-        Pengaturan::get()->update(['lokasi_lat' => '-6.9147000', 'lokasi_lng' => '107.6098000', 'lokasi_radius_meter' => 100]);
-        Carbon::setTestNow('2026-07-13 07:00:00');
-        $siswa = $this->siswa();
-
-        // Goyangan sensor wajar antar dua pembacaan GPS asli.
-        $result = app(AbsensiRecorder::class)->record($siswa, -6.9147000, 107.6098000, true, null, -6.9147050, 107.6098020);
-
-        $this->assertSame('success', $result['status']);
-    }
-
     public function test_lokasi_dikonfigurasi_dan_koordinat_tidak_dikirim_ditolak(): void
     {
         Pengaturan::get()->update(['lokasi_lat' => '-6.9147000', 'lokasi_lng' => '107.6098000', 'lokasi_radius_meter' => 100]);

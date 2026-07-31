@@ -28,9 +28,9 @@ class AbsensiRecorder
      * (AbsensiController) tidak pernah mengirimnya karena kameranya memang
      * di sekolah, jadi parameter ini opsional & backward compatible.
      *
-     * $accuracy/$latAwal/$lngAwal: sinyal tambahan anti-spoofing GPS (lihat
-     * cekLokasi()) — juga opsional, browser lama/tidak mendukung dua kali
-     * baca posisi tetap bisa mengirim $lat/$lng saja.
+     * $accuracy: dipakai cekLokasi() untuk menolak pembacaan GPS yang
+     * device sendiri tidak yakin posisinya (lihat AKURASI_MAKS_METER) —
+     * juga opsional.
      */
     public function record(
         Siswa $siswa,
@@ -38,8 +38,6 @@ class AbsensiRecorder
         ?float $lng = null,
         bool $livenessVerified = true,
         ?float $accuracy = null,
-        ?float $latAwal = null,
-        ?float $lngAwal = null,
     ): array {
         $pengaturan = Pengaturan::get();
 
@@ -108,7 +106,7 @@ class AbsensiRecorder
         }
 
         if (! $existing || $existing->status === 'alpha') {
-            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy, $latAwal, $lngAwal)) {
+            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy)) {
                 return $tolakLokasi;
             }
 
@@ -175,7 +173,7 @@ class AbsensiRecorder
                 // Izin disetujui — lanjutkan ke pencatatan jam_pulang
             }
 
-            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy, $latAwal, $lngAwal)) {
+            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy)) {
                 return $tolakLokasi;
             }
 
@@ -283,7 +281,7 @@ class AbsensiRecorder
      */
     private const AKURASI_MAKS_METER = 150;
 
-    private function cekLokasi(Pengaturan $pengaturan, Siswa $siswa, ?float $lat, ?float $lng, ?float $accuracy = null, ?float $latAwal = null, ?float $lngAwal = null): ?array
+    private function cekLokasi(Pengaturan $pengaturan, Siswa $siswa, ?float $lat, ?float $lng, ?float $accuracy = null): ?array
     {
         if (! $pengaturan->lokasiAktif()) {
             return null;
@@ -305,22 +303,6 @@ class AbsensiRecorder
             return [
                 'status' => 'lokasi',
                 'message' => 'Sinyal GPS kurang akurat. Coba lagi di tempat terbuka (bukan dalam ruangan/basement).',
-                'nama' => $siswa->nama,
-            ];
-        }
-
-        // Sinyal anti-spoofing #2: dua pembacaan GPS asli (lihat
-        // face-kiosk.js::requestLocation()) hampir tidak pernah identik
-        // persis sampai digit terakhir -- noise sensor selalu ada. App
-        // fake-GPS murahan yang menyuntik satu koordinat statis biasanya
-        // justru mengembalikan angka yang SAMA PERSIS di kedua pembacaan.
-        // Sengaja exact-match (bukan "mirip"), bukan fuzzy threshold --
-        // GPS asli yang goyangannya kebetulan kecil tidak akan kena, cuma
-        // yang benar-benar tidak goyang sama sekali yang ketangkap di sini.
-        if ($latAwal !== null && $lngAwal !== null && $latAwal === $lat && $lngAwal === $lng) {
-            return [
-                'status' => 'lokasi',
-                'message' => 'Lokasi GPS tidak wajar (pembacaan tidak berubah). Coba lagi.',
                 'nama' => $siswa->nama,
             ];
         }

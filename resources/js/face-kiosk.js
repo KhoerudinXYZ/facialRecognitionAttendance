@@ -62,13 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Dua pembacaan GPS berturut-turut (bukan sekali) -- server memakai
-    // selisih keduanya sebagai salah satu sinyal anti-spoofing: GPS asli
-    // selalu sedikit "goyang" antar pembacaan karena noise sensor, app
-    // fake-GPS murahan yang cuma menyuntik satu koordinat statis biasanya
-    // mengembalikan angka identik persis. Bukan bukti mutlak (GPS asli yang
-    // sinyalnya sangat kuat kadang juga stabil), makanya cuma jadi sinyal
-    // tambahan di server, bukan penolakan otomatis di sini.
     async function requestLocation() {
         if (!lokasiAktif) return;
 
@@ -79,26 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const pos1 = await ambilPosisi();
-            await new Promise((r) => setTimeout(r, 1500));
-
-            let pos2 = null;
-            try {
-                pos2 = await ambilPosisi();
-            } catch {
-                // Pembacaan kedua gagal (mis. timeout sesaat) -- tetap
-                // lanjut pakai pembacaan pertama saja, jangan gagalkan
-                // seluruh absen cuma karena sinyal sempat putus di
-                // percobaan kedua.
-            }
-
-            const final = pos2 || pos1;
+            const pos = await ambilPosisi();
             currentPosition = {
-                lat: final.coords.latitude,
-                lng: final.coords.longitude,
-                accuracy: final.coords.accuracy,
-                lat_awal: pos1.coords.latitude,
-                lng_awal: pos1.coords.longitude,
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
             };
             geoStatus = 'ok';
         } catch (err) {
@@ -188,8 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 payload.lat = currentPosition.lat;
                 payload.lng = currentPosition.lng;
                 payload.accuracy = currentPosition.accuracy;
-                payload.lat_awal = currentPosition.lat_awal;
-                payload.lng_awal = currentPosition.lng_awal;
             }
 
             const res = await fetch(storeUrl, {
