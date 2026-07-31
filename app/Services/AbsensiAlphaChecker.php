@@ -10,6 +10,7 @@ use App\Models\Pengaturan;
 use App\Models\Siswa;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
@@ -79,9 +80,12 @@ class AbsensiAlphaChecker
         // jadi tidak lolos whereDoesntHave('absensi') lagi -- perlu query
         // terpisah supaya notifikasi yang gagal (mis. Fonnte disconnect)
         // dicoba ulang di run berikutnya begitu channel-nya pulih, alih-alih
-        // cuma satu kali kesempatan lalu diam selamanya.
-        foreach ($this->siswaAlphaPerluDiulang($today, $siswaBelumAbsen->pluck('id')) as $siswa) {
-            $this->notifikasi($siswa, $today);
+        // cuma satu kali kesempatan lalu diam selamanya. Mencakup SEMUA
+        // tanggal yang belum pernah berhasil (bukan cuma hari ini) --
+        // kalau Fonnte mati sampai lewat tengah malam, kegagalan kemarin
+        // tidak boleh ditinggalkan selamanya cuma karena hari sudah ganti.
+        foreach ($this->siswaAlphaPerluDiulang($today, $siswaBelumAbsen->pluck('id')) as $item) {
+            $this->notifikasi($item->siswa, $item->tanggal);
             $this->jedaAntarKirim();
         }
 
@@ -104,29 +108,39 @@ class AbsensiAlphaChecker
     }
 
     /**
-     * Siswa yang tanggal ini semua percobaan notifikasi 'alpha'-nya gagal
-     * (belum pernah sukses lewat kanal manapun) -- retry-nya menghasilkan
-     * baris log baru tiap kali, jadi begitu salah satu akhirnya berhasil,
-     * siswa itu otomatis tidak muncul lagi di sini pada run selanjutnya.
+     * Pasangan (siswa, tanggal) yang notifikasi 'alpha'-nya belum pernah
+     * sukses lewat kanal manapun -- MENCAKUP SEMUA TANGGAL, bukan cuma
+     * hari ini, supaya kegagalan yang belum sempat pulih sebelum tengah
+     * malam (mis. device Fonnte disconnect semalaman) tetap dicoba ulang
+     * di hari-hari berikutnya, bukan ditinggalkan diam-diam selamanya.
+     * Dikelompokkan per (siswa_id, tanggal) -- bukan per siswa saja --
+     * karena satu siswa bisa alpha di beberapa tanggal berbeda dan tiap
+     * tanggal itu kasus terpisah (gagal di tanggal A tidak boleh bikin
+     * tanggal B ikut-ikutan dianggap belum selesai, atau sebaliknya).
      * $idBaruDitandai dikecualikan supaya siswa yang baru saja gagal di
-     * loop $siswaBelumAbsen pada run YANG SAMA tidak langsung diulang lagi
-     * detik itu juga -- retry-nya baru berlaku mulai run berikutnya.
+     * loop $siswaBelumAbsen pada run YANG SAMA (hari ini) tidak langsung
+     * diulang lagi detik itu juga -- retry-nya baru berlaku mulai run
+     * berikutnya.
+     *
+     * @return Collection<int, object{siswa: Siswa, tanggal: Carbon}>
      */
     private function siswaAlphaPerluDiulang(Carbon $today, Collection $idBaruDitandai): Collection
     {
-        $sudahFinal = NotifikasiAbsensiLog::whereDate('tanggal', $today)
-            ->where('jenis', 'alpha')
-            ->where('status', '!=', 'gagal')
-            ->pluck('siswa_id');
+        $pasanganBelumBerhasil = NotifikasiAbsensiLog::where('jenis', 'alpha')
+            ->selectRaw("siswa_id, tanggal, MAX(CASE WHEN status != 'gagal' THEN 1 ELSE 0 END) as ada_berhasil")
+            ->groupBy('siswa_id', 'tanggal')
+            ->having('ada_berhasil', 0)
+            ->get()
+            ->reject(fn ($row) => $row->tanggal->isSameDay($today) && $idBaruDitandai->contains($row->siswa_id));
 
-        $pernahGagal = NotifikasiAbsensiLog::whereDate('tanggal', $today)
-            ->where('jenis', 'alpha')
-            ->where('status', 'gagal')
-            ->pluck('siswa_id');
+        $siswaById = Siswa::whereIn('id', $pasanganBelumBerhasil->pluck('siswa_id'))->get()->keyBy('id');
 
-        $perluDiulang = $pernahGagal->diff($sudahFinal)->diff($idBaruDitandai);
-
-        return Siswa::whereIn('id', $perluDiulang)->get();
+        return $pasanganBelumBerhasil
+            ->map(fn ($row) => isset($siswaById[$row->siswa_id])
+                ? (object) ['siswa' => $siswaById[$row->siswa_id], 'tanggal' => $row->tanggal]
+                : null)
+            ->filter()
+            ->values();
     }
 
     private function notifikasi(Siswa $siswa, Carbon $tanggal): void

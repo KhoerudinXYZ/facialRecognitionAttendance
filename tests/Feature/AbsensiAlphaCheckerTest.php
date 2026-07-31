@@ -189,6 +189,58 @@ class AbsensiAlphaCheckerTest extends TestCase
         Http::assertSentCount(4);
     }
 
+    public function test_notifikasi_alpha_gagal_kemarin_tetap_dicoba_ulang_besok(): void
+    {
+        Mail::fake();
+        config(['services.fonnte.token' => 'test-token']);
+        // 3 respons gagal pertama habis dipakai retry(3,...) internal di
+        // run pertama (hari ke-1); respons ke-4 (sukses) dipakai run kedua
+        // (hari ke-2) -- satu Http::fake() untuk seluruh alur, karena
+        // Http::fake() yang dipanggil berkali-kali TIDAK saling menimpa
+        // (stub pertama yang cocok tetap dipakai duluan).
+        Http::fake(['api.fonnte.com/*' => Http::sequence()
+            ->push(['status' => false], 500)
+            ->push(['status' => false], 500)
+            ->push(['status' => false], 500)
+            ->push(['status' => true], 200)]);
+        Carbon::setTestNow('2026-07-13 20:00:00');
+        $siswa = $this->siswa(['no_hp_orang_tua' => '081234567890']);
+
+        app(AbsensiAlphaChecker::class)->jalankan();
+
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'tanggal' => '2026-07-13 00:00:00',
+            'status' => 'gagal',
+        ]);
+
+        // Besoknya siswa hadir normal (bukan lewat AlphaChecker), jadi
+        // tidak masuk ke $siswaBelumAbsen hari ini -- tapi kegagalan
+        // kemarin harus tetap dicoba ulang, bukan ditinggalkan cuma
+        // karena harinya sudah ganti.
+        Carbon::setTestNow('2026-07-14 08:00:00');
+        Absensi::create([
+            'siswa_id' => $siswa->id,
+            'kelas_id' => $siswa->kelas_id,
+            'tanggal' => '2026-07-14',
+            'status' => 'hadir',
+            'metode' => 'face',
+        ]);
+
+        Carbon::setTestNow('2026-07-14 20:00:00');
+
+        $jumlahBaru = app(AbsensiAlphaChecker::class)->jalankan();
+
+        $this->assertSame(0, $jumlahBaru); // tidak ada siswa BARU yang ditandai alpha hari ini
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'alpha',
+            'tanggal' => '2026-07-13 00:00:00', // retry pakai tanggal ASLI kegagalan, bukan hari ini
+            'status' => 'terkirim',
+        ]);
+    }
+
     public function test_siswa_tanpa_email_orang_tua_tetap_ditandai_alpha_tapi_notifikasi_dicatat_tidak_ada_kontak(): void
     {
         Mail::fake();
@@ -213,7 +265,7 @@ class AbsensiAlphaCheckerTest extends TestCase
         $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
         Absensi::create([
             'siswa_id' => $siswa->id,
-            'tanggal' => '2026-07-13',
+            'tanggal' => '2026-07-13 00:00:00',
             'jam_masuk' => '07:00:00',
             'status' => 'hadir',
             'metode' => 'face',
@@ -287,7 +339,7 @@ class AbsensiAlphaCheckerTest extends TestCase
         $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
         PengajuanIzin::create([
             'siswa_id' => $siswa->id,
-            'tanggal' => '2026-07-13',
+            'tanggal' => '2026-07-13 00:00:00',
             'jenis' => 'sakit',
             'keterangan' => 'Demam',
             'bukti' => 'bukti-izin/surat.jpg',
@@ -308,7 +360,7 @@ class AbsensiAlphaCheckerTest extends TestCase
         $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
         PengajuanIzin::create([
             'siswa_id' => $siswa->id,
-            'tanggal' => '2026-07-13',
+            'tanggal' => '2026-07-13 00:00:00',
             'jenis' => 'sakit',
             'keterangan' => 'Demam',
             'bukti' => 'bukti-izin/surat.jpg',
