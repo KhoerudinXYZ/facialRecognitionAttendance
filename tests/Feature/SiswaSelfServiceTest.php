@@ -211,6 +211,56 @@ class SiswaSelfServiceTest extends TestCase
         $this->assertEquals(0, Absensi::where('siswa_id', $siswa->id)->count());
     }
 
+    /**
+     * Bukti utama fitur audit IP jaringan sekolah: absen HARUS tetap
+     * sukses walau IP request tidak cocok dengan ip_sekolah -- beda total
+     * dari cekLokasi() yang memang menolak. Client test default kirim
+     * REMOTE_ADDR 127.0.0.1 (lihat Symfony Request::create), jadi
+     * ip_sekolah sengaja diisi nilai lain supaya pasti tidak cocok.
+     */
+    public function test_siswa_absen_mandiri_ip_tidak_cocok_jaringan_sekolah_tetap_sukses(): void
+    {
+        Pengaturan::get()->update(['ip_sekolah' => '203.0.113.9']);
+        Carbon::setTestNow('2026-07-13 07:00:00');
+
+        $siswa = $this->siswaBelumRegistrasi();
+        $this->registrasikanAkun($siswa, 'budi01', 'password123');
+        $siswa->faceDescriptors()->create(['descriptor' => array_fill(0, 128, 0.1)]);
+
+        $this->post('/portal/login', [
+            'username' => 'budi01',
+            'password' => 'password123',
+        ])->assertRedirect(route('siswa.dashboard'));
+
+        $this->postJson('/portal/absen', ['liveness_verified' => true])
+            ->assertOk()->assertJsonPath('status', 'success');
+
+        $absensi = Absensi::where('siswa_id', $siswa->id)->firstOrFail();
+        $this->assertSame('127.0.0.1', $absensi->ip_request);
+        $this->assertFalse($absensi->ip_cocok_sekolah);
+    }
+
+    public function test_siswa_absen_mandiri_ip_cocok_jaringan_sekolah_tercatat(): void
+    {
+        Pengaturan::get()->update(['ip_sekolah' => '127.0.0.1']);
+        Carbon::setTestNow('2026-07-13 07:00:00');
+
+        $siswa = $this->siswaBelumRegistrasi();
+        $this->registrasikanAkun($siswa, 'budi01', 'password123');
+        $siswa->faceDescriptors()->create(['descriptor' => array_fill(0, 128, 0.1)]);
+
+        $this->post('/portal/login', [
+            'username' => 'budi01',
+            'password' => 'password123',
+        ])->assertRedirect(route('siswa.dashboard'));
+
+        $this->postJson('/portal/absen', ['liveness_verified' => true])
+            ->assertOk()->assertJsonPath('status', 'success');
+
+        $absensi = Absensi::where('siswa_id', $siswa->id)->firstOrFail();
+        $this->assertTrue($absensi->ip_cocok_sekolah);
+    }
+
     public function test_siswa_yang_sakit_hari_ini_tidak_bisa_buka_kamera_dan_dashboard_tidak_menampilkan_masuk_tercentang(): void
     {
         Carbon::setTestNow('2026-07-13 08:00:00');

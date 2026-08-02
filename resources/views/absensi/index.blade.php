@@ -86,6 +86,7 @@
                             <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Pulang</th>
                             <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Status</th>
                             <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Metode</th>
+                            <th class="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Jaringan</th>
                             <th class="px-5 py-3 text-right text-[10px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Aksi</th>
                         </tr>
                     </thead>
@@ -139,6 +140,24 @@
                                         <span class="text-slate-300 dark:text-slate-600 font-lexend text-xs">—</span>
                                     @endif
                                 </td>
+                                <td class="px-5 py-4">
+                                    {{-- Sinyal audit saja, bukan status keamanan -- null berarti fitur
+                                         belum dikonfigurasi admin atau baris data sebelum fitur ini ada,
+                                         bukan berarti "dicurigai". Lihat Pengaturan::ipCocok(). --}}
+                                    @if ($a && $a->ip_cocok_sekolah === false)
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-lexend font-bold text-xs" title="IP request tidak cocok dengan jaringan sekolah yang terdaftar">
+                                            <x-icon name="wifi" class="w-3 h-3 stroke-[2.5]" />
+                                            Jaringan Lain
+                                        </span>
+                                    @elseif ($a && $a->ip_cocok_sekolah === true)
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-lexend font-bold text-xs" title="IP request cocok dengan jaringan sekolah">
+                                            <x-icon name="wifi" class="w-3 h-3 stroke-[2.5]" />
+                                            WiFi Sekolah
+                                        </span>
+                                    @else
+                                        <span class="text-slate-300 dark:text-slate-600 font-lexend text-xs">—</span>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-4 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-2">
                                         <button type="button"
@@ -158,7 +177,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                <td colspan="8" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center gap-3">
                                         <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
                                             <x-icon name="users" class="w-7 h-7 stroke-[1.5]" />

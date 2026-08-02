@@ -92,6 +92,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('pengaturan', [PengaturanController::class, 'update'])->name('pengaturan.update');
         Route::put('pengaturan/simulasi', [PengaturanController::class, 'updateSimulasi'])->name('pengaturan.simulasi');
         Route::put('pengaturan/lokasi', [PengaturanController::class, 'updateLokasi'])->name('pengaturan.lokasi');
+        Route::put('pengaturan/ip-sekolah', [PengaturanController::class, 'updateIpSekolah'])->name('pengaturan.ip-sekolah');
         Route::put('pengaturan/libur-mingguan', [PengaturanController::class, 'updateLiburMingguan'])->name('pengaturan.libur-mingguan');
 
         Route::get('hari-libur', [HariLiburController::class, 'index'])->name('hari-libur.index');

@@ -239,6 +239,72 @@
                 @endif
             </div>
         </div>
+
+        {{-- Bento Card: IP Jaringan Sekolah --}}
+        <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">WIFI</div>
+
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-lg shadow-sky-500/30">
+                            <x-icon name="wifi" class="w-5 h-5 stroke-[2.5]" />
+                        </div>
+                        <div>
+                            <h3 class="font-outfit font-black text-lg text-slate-800 dark:text-slate-100 tracking-tight">Verifikasi Jaringan Sekolah (IP)</h3>
+                        </div>
+                    </div>
+
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-lexend font-bold text-[10px] uppercase tracking-widest shadow-sm
+                                 {{ $pengaturan->ipSekolahAktif() ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400' }}">
+                        <x-icon :name="$pengaturan->ipSekolahAktif() ? 'check' : 'x-circle'" class="w-3.5 h-3.5 stroke-[2.5]" />
+                        {{ $pengaturan->ipSekolahAktif() ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                </div>
+
+                <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 font-jakarta mb-2">
+                    Sinyal audit tambahan: kalau diisi, tiap absen mandiri dicatat apakah IP publik pengirimnya cocok dengan jaringan WiFi sekolah atau tidak. <strong>Ini tidak pernah memblokir absen</strong> — cuma ditampilkan sebagai penanda di halaman Kelola Absensi supaya admin bisa mengecek manual kalau ada pola mencurigakan.
+                </p>
+                <p class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 font-jakarta mb-5">
+                    IP publik sekolah bisa berubah sewaktu-waktu tergantung ISP — cek berkala kalau indikatornya mulai selalu "tidak cocok" padahal siswa memang di WiFi sekolah.
+                </p>
+
+                <form id="form-ip-sekolah" action="{{ route('pengaturan.ip-sekolah') }}" method="POST" class="space-y-4">
+                    @csrf @method('PUT')
+
+                    <div>
+                        <label for="ip_sekolah" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Daftar IP / CIDR Sekolah</label>
+                        <input id="ip_sekolah" name="ip_sekolah" type="text" placeholder="mis. 36.85.12.40, 114.79.0.0/16"
+                               class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500/30 backdrop-blur-sm px-4 py-2.5"
+                               value="{{ old('ip_sekolah', $pengaturan->ip_sekolah) }}" />
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-jakarta mt-2">
+                            Pisahkan dengan koma kalau sekolah punya lebih dari satu jalur internet. IP Anda saat ini (kalau sedang di WiFi sekolah, salin nilai ini): <code class="font-bold text-slate-700 dark:text-slate-200">{{ request()->ip() }}</code>
+                        </p>
+                    </div>
+
+                    <div class="flex justify-end pt-2">
+                        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black font-lexend text-xs uppercase tracking-wider shadow-lg shadow-sky-500/20 transition-all duration-300 transform active:scale-95">
+                            <x-icon name="save" class="w-4 h-4 stroke-[2.5]" /> Simpan Jaringan
+                        </button>
+                    </div>
+                </form>
+
+                @if ($pengaturan->ipSekolahAktif())
+                    <div class="mt-4 pt-4">
+                        <x-confirm-form :action="route('pengaturan.ip-sekolah')" method="PUT"
+                                         title="Nonaktifkan verifikasi jaringan?"
+                                         message="Daftar IP sekolah akan dihapus, pencatatan cocok/tidaknya jaringan berhenti untuk absen berikutnya."
+                                         confirm-label="Nonaktifkan"
+                                         trigger-class="text-[10px] font-black font-lexend text-rose-500 hover:text-rose-400 transition-colors duration-200 uppercase tracking-widest flex items-center gap-1">
+                            <x-slot:fields>
+                                <input type="hidden" name="ip_sekolah" value="">
+                            </x-slot:fields>
+                            <x-icon name="x-circle" class="w-3.5 h-3.5 stroke-[2.5]" /> Nonaktifkan Verifikasi
+                        </x-confirm-form>
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
 
     @vite('resources/js/pengaturan-lokasi.js')

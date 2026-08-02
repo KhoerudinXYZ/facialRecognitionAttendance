@@ -138,6 +138,7 @@ class SiswaAbsensiController extends Controller
             $data['lng'] ?? null,
             true,
             $data['accuracy'] ?? null,
+            $request->ip(),
         ));
     }
 

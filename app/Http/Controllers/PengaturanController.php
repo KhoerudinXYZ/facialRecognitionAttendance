@@ -73,6 +73,26 @@ class PengaturanController extends Controller
     }
 
     /**
+     * Set/reset daftar IP/CIDR jaringan sekolah buat sinyal audit "absen
+     * dari WiFi sekolah atau bukan" (lihat Pengaturan::ipCocok()). Murni
+     * catatan, tidak pernah dipakai menolak absen -- makanya validasi
+     * format IP sengaja longgar (bukan regex ketat): salah ketik cuma
+     * bikin entri itu tidak pernah cocok, bukan bikin form gagal simpan.
+     */
+    public function updateIpSekolah(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ip_sekolah' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        Pengaturan::get()->update($data);
+
+        return back()->with('success', filled($data['ip_sekolah'] ?? null)
+            ? 'Verifikasi jaringan sekolah diaktifkan.'
+            : 'Verifikasi jaringan sekolah dinonaktifkan.');
+    }
+
+    /**
      * Set/reset hari dalam seminggu yang otomatis dianggap libur (mis.
      * Sabtu & Minggu), supaya HariLibur::isLibur() tidak perlu satu baris
      * manual per akhir pekan. Checkbox yang tidak dicentang tidak terkirim

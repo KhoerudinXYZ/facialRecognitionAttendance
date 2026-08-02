@@ -20,10 +20,13 @@ class Absensi extends Model
         'metode',
         'liveness_verified',
         'keterangan',
+        'ip_request',
+        'ip_cocok_sekolah',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
+        'ip_cocok_sekolah' => 'boolean',
     ];
 
     public function siswa(): BelongsTo

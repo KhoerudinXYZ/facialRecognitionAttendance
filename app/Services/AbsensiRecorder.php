@@ -31,6 +31,10 @@ class AbsensiRecorder
      * $accuracy: dipakai cekLokasi() untuk menolak pembacaan GPS yang
      * device sendiri tidak yakin posisinya (lihat AKURASI_MAKS_METER) —
      * juga opsional.
+     *
+     * $ip: IP publik pengirim request (dari $request->ip(), bukan input
+     * client). Murni dicatat untuk audit lewat Pengaturan::ipCocok() —
+     * TIDAK PERNAH dipakai menolak absen, beda total dari $lat/$lng.
      */
     public function record(
         Siswa $siswa,
@@ -38,6 +42,7 @@ class AbsensiRecorder
         ?float $lng = null,
         bool $livenessVerified = true,
         ?float $accuracy = null,
+        ?string $ip = null,
     ): array {
         $pengaturan = Pengaturan::get();
 
@@ -120,6 +125,8 @@ class AbsensiRecorder
                 'status' => $status,
                 'metode' => 'face',
                 'liveness_verified' => $livenessVerified,
+                'ip_request' => $ip,
+                'ip_cocok_sekolah' => $pengaturan->ipCocok($ip),
             ];
 
             if ($existing) {
@@ -177,7 +184,12 @@ class AbsensiRecorder
                 return $tolakLokasi;
             }
 
-            $existing->update(['jam_pulang' => $now->format('H:i:s'), 'liveness_verified' => $livenessVerified]);
+            $existing->update([
+                'jam_pulang' => $now->format('H:i:s'),
+                'liveness_verified' => $livenessVerified,
+                'ip_request' => $ip,
+                'ip_cocok_sekolah' => $pengaturan->ipCocok($ip),
+            ]);
 
             return [
                 'status' => 'success',

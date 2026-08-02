@@ -58,4 +58,29 @@ class PengaturanControllerTest extends TestCase
         $this->assertNull(Pengaturan::get()->jam_cek_belum_hadir);
         $this->assertFalse(Pengaturan::get()->cekBelumHadirAktif());
     }
+
+    public function test_ip_sekolah_tersimpan_lewat_request_asli(): void
+    {
+        $this->actingAs($this->admin());
+
+        $this->put('/pengaturan/ip-sekolah', ['ip_sekolah' => '36.85.12.40, 114.79.0.0/16'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame('36.85.12.40, 114.79.0.0/16', Pengaturan::get()->ip_sekolah);
+        $this->assertTrue(Pengaturan::get()->ipSekolahAktif());
+    }
+
+    public function test_ip_sekolah_kosong_menonaktifkan_fitur(): void
+    {
+        $this->actingAs($this->admin());
+        Pengaturan::get()->update(['ip_sekolah' => '36.85.12.40']);
+
+        $this->put('/pengaturan/ip-sekolah', ['ip_sekolah' => ''])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertNull(Pengaturan::get()->ip_sekolah);
+        $this->assertFalse(Pengaturan::get()->ipSekolahAktif());
+    }
 }
