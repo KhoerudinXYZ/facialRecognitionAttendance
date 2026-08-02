@@ -114,6 +114,11 @@ testing manual langsung di domain produksi:
   - **Verifikasi lokasi GPS** (opsional, admin yang aktifkan) — harus
     dalam radius tertentu dari titik sekolah, dengan lapisan
     anti-spoofing (lihat bagian "Ditambahkan Hari Ini").
+  - **Audit jaringan WiFi sekolah (IP)** (opsional, admin yang aktifkan)
+    — IP publik tiap request absen mandiri dicatat & dicocokkan ke
+    daftar IP/CIDR sekolah. Murni sinyal audit, tidak pernah menolak
+    absen (beda total dari verifikasi GPS) — IP sekolah bisa berubah
+    sewaktu-waktu dan tidak semua siswa wajib pakai WiFi sekolah.
   - Absen masuk (status hadir/terlambat otomatis dari jam) dan absen
     pulang (kamera terkunci sampai jam pulang, kecuali ada izin pulang
     cepat yang disetujui).
@@ -143,7 +148,9 @@ Akses dibedakan by role: **admin** (akses penuh) vs **wali kelas**
   admin).
 - **Absensi**: rekap harian (filter tanggal & kelas), input/koreksi
   manual (hadir/terlambat/izin/sakit/alpha), audit log absensi yang
-  dihapus (siapa hapus, kapan, data aslinya apa).
+  dihapus (siapa hapus, kapan, data aslinya apa), badge jaringan
+  ("WiFi Sekolah" / "Jaringan Lain") per baris absen mandiri kalau
+  verifikasi IP sekolah aktif.
 - **Pengajuan Izin/Sakit** — approve/reject pengajuan siswa, approve
   otomatis menulis baris absensi yang sesuai.
 - **Koreksi Absensi** — approve/reject laporan koreksi siswa; approve
@@ -157,8 +164,9 @@ Akses dibedakan by role: **admin** (akses penuh) vs **wali kelas**
   otomatis berulang (mis. Sabtu-Minggu).
 - **Pengaturan** — jam masuk/batas terlambat/mulai pulang/jam cek belum
   hadir, verifikasi lokasi GPS (titik sekolah + radius, dengan peta
-  interaktif), simulasi waktu (testing, disembunyikan dari UI produksi),
-  libur mingguan.
+  interaktif), verifikasi jaringan sekolah (daftar IP/CIDR buat audit,
+  lihat bagian Keamanan), simulasi waktu (testing, disembunyikan dari UI
+  produksi), libur mingguan.
 - **Notifikasi Orang Tua** — riwayat semua notifikasi kehadiran/
   alpha/belum-hadir yang terkirim ke orang tua (kanal, status
   terkirim/gagal/tidak ada kontak).
@@ -189,5 +197,8 @@ Akses dibedakan by role: **admin** (akses penuh) vs **wali kelas**
 - Rate limiting di endpoint registrasi & lupa password (siswa & staf).
 - Verifikasi lokasi GPS dengan lapisan anti-spoofing (akurasi minimum,
   deteksi pembacaan statis).
+- Audit jaringan WiFi sekolah (IP) — sinyal tambahan lawan fake-GPS,
+  murni pencatatan (badge di Kelola Absensi), tidak pernah menolak
+  absen.
 - Liveness detection (anti foto statis) di proses absen wajah.
 - Audit log buat absensi yang dihapus admin.

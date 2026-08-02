@@ -55,7 +55,7 @@
 
         {{-- Bento Cards Koreksi --}}
         @forelse ($koreksiList as $k)
-            <div class="bento-card rounded-[2rem] p-6 sm:p-7 shadow-xl relative group transition-all duration-300 hover:scale-[1.005] overflow-x-auto {{ $k->status === 'menunggu' ? 'border-amber-200/50 dark:border-amber-800/30' : '' }}">
+            <div class="bento-card rounded-[2rem] p-6 sm:p-7 shadow-xl relative group transition-all duration-300 hover:scale-[1.005] {{ $k->status === 'menunggu' ? 'border-amber-200/50 dark:border-amber-800/30' : '' }}">
                 <div class="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
                     @if ($k->status === 'menunggu')
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 rounded-t-[2rem]"></div>
@@ -63,7 +63,7 @@
                     <div class="absolute -right-4 -bottom-4 text-[50px] font-black text-slate-900/[0.025] dark:text-white/[0.015] font-lexend tracking-tighter leading-none select-none uppercase">Koreksi</div>
                 </div>
 
-                <div class="flex items-center justify-between gap-5 relative z-10 min-w-max">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
                     {{-- Left: Student Info --}}
                     <div class="flex items-center gap-4 flex-1 min-w-0">
                         <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-black font-lexend flex items-center justify-center shadow-lg shadow-indigo-500/30 shrink-0 text-lg leading-none">{{ Illuminate\Support\Str::of($k->siswa->nama)->substr(0, 1)->upper() }}</div>

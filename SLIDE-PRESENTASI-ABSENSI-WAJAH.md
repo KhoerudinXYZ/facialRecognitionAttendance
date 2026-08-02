@@ -15,22 +15,23 @@
 
 ---
 
-## Slide 2 — Masalah yang Kita Hadapi Sekarang
-- Absensi manual rawan **titip absen / titip tanda tangan**
-- Rekap bulanan **memakan waktu lama**
+## Slide 2 — Masalah yang Kita Hadapi Sekarang (Absensi Fingerprint)
+- Alat fingerprint **sering rusak / error teknis** — absensi terhenti total sampai alat diperbaiki
+- Sensor **sering gagal membaca sidik jari** (jari kotor, basah, kering) — siswa harus coba berkali-kali, bikin antre
+- **Laporan kehadiran lambat** — data dari alat tidak langsung siap jadi rekap, butuh proses tambahan dulu sebelum bisa dilaporkan
 - Guru sering **terlambat tahu** siswa tidak masuk tanpa keterangan
-- Data kehadiran untuk laporan ke orang tua/dinas kurang rapi
 
-*Catatan pembicara: bisa tanya guru pengalaman nyata mereka soal titip absen / rekap manual.*
+*Catatan pembicara: bisa tanya guru pengalaman nyata mereka soal alat fingerprint yang rusak/error dan proses laporan yang lambat.*
 
 ---
 
 ## Slide 3 — Solusi: Absensi Wajah
 - Siswa absen dengan **menghadap kamera** di HP/laptop masing-masing
+- **Tidak ada sensor yang harus disentuh** — tidak ada lagi masalah jari kotor/basah/kering "gagal baca"
 - Sistem otomatis mengenali wajah & mencatat **jam masuk & jam pulang**
 - Status **Hadir / Terlambat** ditentukan otomatis sesuai jam yang ditetapkan sekolah
 - Siswa diminta **berkedip** dulu — foto di layar HP tidak akan lolos
-- Tidak perlu antre di satu titik/kiosk
+- Tidak perlu antre di satu titik/alat — tidak ada titik kegagalan tunggal seperti satu mesin fingerprint yang rusak
 
 ---
 
@@ -48,6 +49,7 @@
 - Kelola data **kelas** & **siswa** (termasuk impor Excel massal)
 - **Rekap kehadiran harian**, bisa input manual untuk kondisi khusus
 - **Setuju/Tolak** pengajuan izin & sakit siswa secara daring (dengan bukti)
+- **Setuju/Tolak laporan koreksi absensi** — siswa yang datanya salah tercatat bisa minta diperbaiki, admin/wali kelas tinggal approve dan data langsung terkoreksi
 - **Laporan periode** — tinggal unduh dalam format Excel atau PDF
 
 ---
@@ -56,6 +58,7 @@
 - Registrasi & daftar wajah cukup sekali
 - Absen mandiri dari HP masing-masing
 - Bisa **ajukan izin/sakit** online (unggah bukti/surat)
+- Bisa **lapor koreksi absensi** kalau kehadirannya salah tercatat (mis. wajah gagal terdeteksi), tinggal tunggu approval
 - Bisa lihat **riwayat kehadiran** sendiri
 
 ---
@@ -64,12 +67,15 @@
 - Jam masuk & batas terlambat bisa diatur sendiri
 - **Hari libur**: tanggal manual, atau centang sekali untuk libur mingguan (Sabtu/Minggu) — tidak perlu diulang tiap minggu
 - **(Opsional)** Verifikasi lokasi GPS — absen ditolak jika siswa di luar radius area sekolah, titik & radius sekolah tinggal diklik di peta
+- **(Opsional, baru)** Verifikasi jaringan WiFi sekolah — daftar IP sekolah bisa diisi admin sebagai sinyal audit tambahan (lihat Slide 9)
 
 ---
 
 ## Slide 8 — Yang Terjadi Otomatis di Belakang Sistem
 - Siswa yang **tidak absen sampai akhir hari** otomatis ditandai **Alpha**
-- **Email ke orang tua**: otomatis saat anak tiba di sekolah (konfirmasi hadir) *dan* saat alpha — kalau email orang tua sudah didaftarkan
+- **Peringatan dini "Belum Hadir"** — kalau sampai jam tertentu siswa belum absen, notifikasi terkirim duluan, sebelum status alpha resmi di akhir hari
+- **WhatsApp jadi kanal utama** ke orang tua (konfirmasi hadir *dan* alpha) — email otomatis jadi cadangan kalau WhatsApp tidak bisa dipakai untuk siswa itu
+- Notifikasi yang **gagal terkirim dicoba ulang otomatis**, tidak langsung menyerah sekali gagal
 - **Email ke wali kelas**: otomatis saat ada siswa binaannya mengajukan izin/sakit baru
 - Backup data (database + foto) berjalan otomatis setiap hari
 
@@ -79,6 +85,9 @@
 - Data yang disimpan bukan foto wajah, tapi kode angka hasil pengenalan wajah
 - Login guru/staf dan login siswa **benar-benar terpisah**
 - Satu siswa hanya bisa tercatat **1 kali per hari** (dicegah sistem, tidak bisa dobel)
+- Sinyal GPS yang tidak akurat (device sendiri tidak yakin posisinya) **otomatis ditolak**, bukan cuma dipercaya mentah-mentah
+- **(Baru)** Audit jaringan WiFi sekolah — absen mandiri dicatat juga dari jaringan apa (WiFi sekolah / jaringan lain) sebagai rekam jejak tambahan buat admin, **bukan untuk memblokir** (IP sekolah bisa berubah, siswa tidak wajib WiFi sekolah)
+- **Rate limiting** di pendaftaran akun & lupa password — cegah orang coba klaim NIS siswa lain berkali-kali
 - Setiap data absensi yang **dihapus tetap ada jejaknya** (siapa & kapan menghapus)
 
 ---
@@ -101,9 +110,9 @@
 ---
 
 ## Slide 12 — Rencana Pengembangan Selanjutnya
-- Notifikasi via WhatsApp, tidak hanya email
 - Deteksi "wajah hidup" yang lebih kuat (tambah gerakan kepala, bukan cuma kedipan)
 - Dashboard grafik tren kehadiran per kelas (saat ini sudah ada tren 7 hari umum)
+- Verifikasi jaringan WiFi sekolah masih sebatas audit — bisa dikembangkan lebih lanjut kalau ke depan dibutuhkan
 
 ---
 
