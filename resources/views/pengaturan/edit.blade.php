@@ -14,7 +14,7 @@
              (bukan dihapus) sebelum deploy production, fitur testing ini
              gampang dinyalakan lagi lokal kalau perlu: tinggal hapus
              class `hidden` di bawah ini. --}}
-        <div class="bento-card rounded-[2rem] p-6 border-amber-200/50 dark:border-amber-800/40 relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 backdrop-blur-md">
+        <div class="hidden bento-card rounded-[2rem] p-6 border-amber-200/50 dark:border-amber-800/40 relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 backdrop-blur-md">
             <div class="absolute -right-4 -bottom-4 text-[70px] font-black text-amber-900/[0.05] dark:text-amber-100/[0.03] font-lexend pointer-events-none tracking-tighter leading-none select-none">TEST</div>
             
             <div class="relative z-10">
