@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Absensi;
+use App\Models\AbsensiKecepatanAnomaliLog;
 use App\Models\FaceDescriptor;
 use App\Models\HariLibur;
 use App\Models\Kelas;
@@ -413,6 +414,66 @@ class AbsensiSmokeTest extends TestCase
             'metode' => 'face',
             'dihapus_oleh_nama' => 'Admin',
         ]);
+    }
+
+    public function test_rekap_menampilkan_badge_dicurigai_fake_gps(): void
+    {
+        $this->actingAs($this->admin());
+        $kelas = $this->kelas();
+        $siswa = Siswa::create([
+            'nis' => '333', 'nama' => 'Rian', 'jenis_kelamin' => 'L', 'kelas_id' => $kelas->id,
+        ]);
+        $siswaLain = Siswa::create([
+            'nis' => '444', 'nama' => 'Sinta', 'jenis_kelamin' => 'P', 'kelas_id' => $kelas->id,
+        ]);
+
+        Absensi::create([
+            'siswa_id' => $siswa->id,
+            'tanggal' => now()->toDateString(),
+            'jam_masuk' => '07:00:00',
+            'status' => 'hadir',
+            'metode' => 'face',
+        ]);
+        Absensi::create([
+            'siswa_id' => $siswaLain->id,
+            'tanggal' => now()->toDateString(),
+            'jam_masuk' => '07:05:00',
+            'status' => 'hadir',
+            'metode' => 'face',
+        ]);
+
+        AbsensiKecepatanAnomaliLog::create([
+            'siswa_id' => $siswa->id,
+            'lat_buka' => -6.9147000,
+            'lng_buka' => 107.6098000,
+            'lat_absen' => -6.7347000,
+            'lng_absen' => 107.6098000,
+            'jarak_meter' => 20000.0,
+            'jeda_ms' => 60000,
+            'kecepatan_kmh' => 1200.0,
+        ]);
+
+        $response = $this->get('/absensi');
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Rian', 'Dicurigai Fake GPS']);
+        $response->assertSeeText('Sinta');
+        // Sinta gak punya anomali -- badge cuma muncul di baris Rian, tapi
+        // 2x karena rekap render kartu (mobile) + tabel (desktop) sekaligus
+        // di DOM yang sama, CSS (sm:hidden/hidden sm:block) yang milih mana
+        // ditampilkan sesuai lebar layar -- bukan berarti Rian dobel baris.
+        $this->assertSame(2, substr_count($response->getContent(), 'Dicurigai Fake GPS'));
+        // Admin -- badge-nya harus jadi link langsung ke Audit Lokasi.
+        $response->assertSee(route('absensi.audit-lokasi') . '#anomali-kecepatan', false);
+
+        // Wali kelas gak boleh akses /absensi/audit-lokasi (admin-only),
+        // jadi badge-nya buat mereka harus tetap teks biasa, bukan link mati.
+        $wali = $this->waliKelas($kelas);
+        $this->actingAs($wali);
+        $responseWali = $this->get('/absensi');
+        $responseWali->assertOk();
+        $responseWali->assertSeeText('Dicurigai Fake GPS');
+        $responseWali->assertDontSee(route('absensi.audit-lokasi'), false);
     }
 
     public function test_halaman_riwayat_hapus_absensi_hanya_admin(): void

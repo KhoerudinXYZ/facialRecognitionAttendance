@@ -30,7 +30,7 @@
 
         {{-- Bento Table Card --}}
         <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">KELAS</div>
+            <div class="hidden sm:block absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">KELAS</div>
 
             <div class="flex items-center justify-between pb-5 border-b border-slate-200/50 dark:border-slate-700/50 relative z-10 mb-2">
                 <div>
@@ -39,7 +39,73 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto relative z-10">
+            {{-- Kartu di mobile -- tabel 6 kolom gak muat di layar sempit. --}}
+            <div class="sm:hidden space-y-3 relative z-10">
+                @forelse ($kelas as $k)
+                    <div class="rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/40 p-4 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-black font-lexend text-xs flex items-center justify-center shadow-md shrink-0">
+                                {{ Illuminate\Support\Str::of($k->nama_kelas)->substr(0, 2)->upper() }}
+                            </div>
+                            <div class="min-w-0">
+                                <span class="font-black font-outfit text-slate-800 dark:text-slate-100 text-base block truncate">{{ $k->nama_kelas }}</span>
+                                <span class="text-[11px] font-jakarta font-semibold text-slate-400 dark:text-slate-500">{{ $k->jurusan ?? '-' }} &middot; Tingkat {{ $k->tingkat }}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            @if ($k->waliKelas)
+                                <span class="font-jakarta font-semibold text-slate-700 dark:text-slate-300 text-sm">{{ $k->waliKelas->name }}</span>
+                            @else
+                                <span class="inline-flex px-2 py-1 rounded-md bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-lexend font-bold text-[10px] uppercase tracking-wider border border-rose-200/50 dark:border-rose-800/50">Belum Diatur</span>
+                            @endif
+                            <span class="font-lexend font-black text-sm text-slate-800 dark:text-slate-200">{{ $k->siswa_count }} Siswa</span>
+                        </div>
+
+                        <div>
+                            @if ($isLibur)
+                                <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md bg-slate-500 text-white">Libur</span>
+                            @else
+                                <span @class([
+                                        'inline-flex px-3 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md',
+                                        'bg-emerald-500 text-white shadow-emerald-500/30' => $k->siswa_count > 0 && $k->hadir_hari_ini_count >= $k->siswa_count,
+                                        'bg-amber-500 text-white shadow-amber-500/30' => $k->hadir_hari_ini_count > 0 && $k->hadir_hari_ini_count < $k->siswa_count,
+                                        'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400 shadow-none' => $k->hadir_hari_ini_count === 0,
+                                    ])>
+                                    {{ $k->hadir_hari_ini_count }} / {{ $k->siswa_count }} Hadir
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <a href="{{ route('siswa.index', ['kelas_id' => $k->id]) }}"
+                               class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-lexend font-bold text-[11px] uppercase tracking-wider border border-indigo-200/50 dark:border-indigo-800/50">
+                                <x-icon name="users" class="w-3.5 h-3.5 stroke-[2.5]" /> Siswa
+                            </a>
+                            @if (auth()->user()->isAdmin())
+                                <a href="{{ route('kelas.edit', $k) }}"
+                                   class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                    <x-icon name="pencil" class="w-4 h-4 stroke-[2.5]" />
+                                </a>
+                                <x-confirm-form :action="route('kelas.destroy', $k)" title="Hapus kelas ini?"
+                                                 message="Kelas yang masih ada siswanya tidak bisa dihapus."
+                                                 trigger-class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                    <x-icon name="trash" class="w-4 h-4 stroke-[2.5]" />
+                                </x-confirm-form>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="flex flex-col items-center gap-3 py-12">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
+                            <x-icon name="clipboard-list" class="w-7 h-7 stroke-[1.5]" />
+                        </div>
+                        <span class="text-sm font-semibold text-slate-500 dark:text-slate-400 font-jakarta">Belum ada data kelas.</span>
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="hidden sm:block overflow-x-auto relative z-10">
                 <table class="min-w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-200/50 dark:border-slate-700/50">

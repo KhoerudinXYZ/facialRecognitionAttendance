@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Absensi;
+use App\Models\AbsensiKecepatanAnomaliLog;
 use App\Models\FaceDescriptor;
 use App\Models\Kelas;
 use App\Models\Pengaturan;
@@ -209,6 +210,32 @@ class SiswaSelfServiceTest extends TestCase
             ->assertOk()->assertJsonPath('status', 'lokasi');
 
         $this->assertEquals(0, Absensi::where('siswa_id', $siswa->id)->count());
+    }
+
+    public function test_siswa_absen_mandiri_lat_buka_dan_jeda_ms_tercatat_sebagai_anomali_kecepatan(): void
+    {
+        Carbon::setTestNow('2026-07-13 07:00:00');
+
+        $siswa = $this->siswaBelumRegistrasi();
+        $this->registrasikanAkun($siswa, 'budi01', 'password123');
+        $siswa->faceDescriptors()->create(['descriptor' => array_fill(0, 128, 0.1)]);
+
+        $this->post('/portal/login', [
+            'username' => 'budi01',
+            'password' => 'password123',
+        ])->assertRedirect(route('siswa.dashboard'));
+
+        // Lokasi "buka halaman" ~20km dari lokasi "submit", jeda cuma 60 detik.
+        $this->postJson('/portal/absen', [
+            'lat' => -6.9147000,
+            'lng' => 107.6098000,
+            'lat_buka' => -6.7347000,
+            'lng_buka' => 107.6098000,
+            'jeda_ms' => 60000,
+            'liveness_verified' => true,
+        ])->assertOk()->assertJsonPath('status', 'success');
+
+        $this->assertDatabaseHas('absensi_kecepatan_anomali_log', ['siswa_id' => $siswa->id]);
     }
 
     /**

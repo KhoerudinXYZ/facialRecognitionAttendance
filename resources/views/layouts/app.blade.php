@@ -32,10 +32,14 @@
     </head>
     <body class="font-sans antialiased">
         <div class="page-bg min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-300 relative overflow-x-hidden">
-            <!-- Ambient blurred background glows for admin area -->
-            <div class="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-400/15 dark:bg-indigo-500/14 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-            <div class="absolute top-1/3 right-0 w-[400px] h-[400px] bg-violet-400/12 dark:bg-violet-500/12 rounded-full blur-[100px] pointer-events-none -z-10"></div>
-            <div class="absolute bottom-0 left-0 w-[500px] h-[400px] bg-cyan-400/10 dark:bg-cyan-500/8 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+            <!-- Ambient blurred background glows for admin area -- hidden below
+                 sm: on a narrow phone viewport these 400-600px blur circles
+                 dominate the visible area instead of sitting subtly in the
+                 background, which is a big chunk of what makes the admin
+                 pages feel visually "berat"/pusing on mobile. -->
+            <div class="hidden sm:block absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-400/15 dark:bg-indigo-500/14 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+            <div class="hidden sm:block absolute top-1/3 right-0 w-[400px] h-[400px] bg-violet-400/12 dark:bg-violet-500/12 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+            <div class="hidden sm:block absolute bottom-0 left-0 w-[500px] h-[400px] bg-cyan-400/10 dark:bg-cyan-500/8 rounded-full blur-[100px] pointer-events-none -z-10"></div>
 
             @include('layouts.navigation')
 

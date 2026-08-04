@@ -130,6 +130,12 @@ class SiswaAbsensiController extends Controller
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
             'accuracy' => ['nullable', 'numeric', 'min:0'],
             'liveness_verified' => ['required', 'accepted'],
+            // Bacaan lokasi "buka halaman" + jeda ke bacaan "submit" (lat/lng
+            // di atas) -- dipakai AbsensiRecorder buat cek anomali kecepatan
+            // (lihat cekAnomaliKecepatan()), murni audit, bukan syarat lolos.
+            'lat_buka' => ['nullable', 'numeric', 'between:-90,90'],
+            'lng_buka' => ['nullable', 'numeric', 'between:-180,180'],
+            'jeda_ms' => ['nullable', 'integer', 'min:0'],
         ]);
 
         return response()->json($recorder->record(
@@ -139,6 +145,9 @@ class SiswaAbsensiController extends Controller
             true,
             $data['accuracy'] ?? null,
             $request->ip(),
+            $data['lat_buka'] ?? null,
+            $data['lng_buka'] ?? null,
+            $data['jeda_ms'] ?? null,
         ));
     }
 

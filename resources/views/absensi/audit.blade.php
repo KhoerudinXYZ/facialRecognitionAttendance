@@ -9,7 +9,27 @@
             siapa yang menghapus, kapan, dan absensi seperti apa yang hilang, walau baris aslinya sudah tidak ada.
         </p>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        {{-- Kartu di mobile -- tabel 8 kolom gak muat di layar sempit. --}}
+        <div class="sm:hidden space-y-2">
+            @forelse ($log as $entry)
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-1.5 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="font-medium text-gray-800 dark:text-gray-100">{{ $entry->siswa_nama }}</span>
+                        <x-status-badge :status="$entry->status" />
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Absen tanggal {{ $entry->tanggal->format('d/m/Y') }} &middot; {{ ucfirst($entry->metode) }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Masuk {{ $entry->jam_masuk ? \Illuminate\Support\Str::of($entry->jam_masuk)->substr(0,5) : '-' }} &middot; Pulang {{ $entry->jam_pulang ? \Illuminate\Support\Str::of($entry->jam_pulang)->substr(0,5) : '-' }}</div>
+                    <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500 pt-1 border-t border-gray-100 dark:border-gray-700">
+                        <span>Dihapus oleh {{ $entry->dihapus_oleh_nama }}</span>
+                        <span>{{ $entry->created_at->format('d/m/Y H:i') }}</span>
+                    </div>
+                </div>
+            @empty
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-500 dark:text-gray-400 text-sm">Belum ada absensi yang dihapus.</div>
+            @endforelse
+        </div>
+
+        <div class="hidden sm:block bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-700/50 text-left text-gray-500 dark:text-gray-400">

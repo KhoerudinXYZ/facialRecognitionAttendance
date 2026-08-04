@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Mail\SiswaHadirMail;
 use App\Models\Absensi;
+use App\Models\AbsensiKecepatanAnomaliLog;
+use App\Models\AbsensiLokasiGagalLog;
 use App\Models\HariLibur;
 use App\Models\NotifikasiAbsensiLog;
 use App\Models\Pengaturan;
@@ -43,6 +45,9 @@ class AbsensiRecorder
         bool $livenessVerified = true,
         ?float $accuracy = null,
         ?string $ip = null,
+        ?float $latBuka = null,
+        ?float $lngBuka = null,
+        ?int $jedaMs = null,
     ): array {
         $pengaturan = Pengaturan::get();
 
@@ -50,6 +55,8 @@ class AbsensiRecorder
         // kapan saja tanpa mempengaruhi alur normal (lihat migration-nya).
         $now = $pengaturan->waktuSekarang();
         $today = $now->copy()->startOfDay();
+
+        $this->cekAnomaliKecepatan($siswa, $lat, $lng, $latBuka, $lngBuka, $jedaMs, $now);
 
         if (HariLibur::isLibur($today)) {
             return [
@@ -111,7 +118,7 @@ class AbsensiRecorder
         }
 
         if (! $existing || $existing->status === 'alpha') {
-            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy)) {
+            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy, $ip, $now)) {
                 return $tolakLokasi;
             }
 
@@ -127,6 +134,8 @@ class AbsensiRecorder
                 'liveness_verified' => $livenessVerified,
                 'ip_request' => $ip,
                 'ip_cocok_sekolah' => $pengaturan->ipCocok($ip),
+                'lat' => $lat,
+                'lng' => $lng,
             ];
 
             if ($existing) {
@@ -180,7 +189,7 @@ class AbsensiRecorder
                 // Izin disetujui — lanjutkan ke pencatatan jam_pulang
             }
 
-            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy)) {
+            if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy, $ip, $now)) {
                 return $tolakLokasi;
             }
 
@@ -189,6 +198,8 @@ class AbsensiRecorder
                 'liveness_verified' => $livenessVerified,
                 'ip_request' => $ip,
                 'ip_cocok_sekolah' => $pengaturan->ipCocok($ip),
+                'lat' => $lat,
+                'lng' => $lng,
             ]);
 
             return [
@@ -293,13 +304,15 @@ class AbsensiRecorder
      */
     private const AKURASI_MAKS_METER = 150;
 
-    private function cekLokasi(Pengaturan $pengaturan, Siswa $siswa, ?float $lat, ?float $lng, ?float $accuracy = null): ?array
+    private function cekLokasi(Pengaturan $pengaturan, Siswa $siswa, ?float $lat, ?float $lng, ?float $accuracy = null, ?string $ip = null, ?Carbon $now = null): ?array
     {
         if (! $pengaturan->lokasiAktif()) {
             return null;
         }
 
         if ($lat === null || $lng === null) {
+            $this->logLokasiGagal($siswa, null, null, $accuracy, null, 'tidak_terkirim', $ip, $now);
+
             return [
                 'status' => 'lokasi',
                 'message' => 'Lokasi GPS tidak terdeteksi. Aktifkan izin lokasi lalu coba lagi.',
@@ -312,6 +325,8 @@ class AbsensiRecorder
         // radius di bawah jadi tidak berarti sama sekali -- laporan lat/lng
         // sendiri "benar" cuma alamat-nya nyaris tidak diketahui.
         if ($accuracy !== null && $accuracy > self::AKURASI_MAKS_METER) {
+            $this->logLokasiGagal($siswa, $lat, $lng, $accuracy, null, 'akurasi_kurang', $ip, $now);
+
             return [
                 'status' => 'lokasi',
                 'message' => 'Sinyal GPS kurang akurat. Coba lagi di tempat terbuka (bukan dalam ruangan/basement).',
@@ -327,6 +342,8 @@ class AbsensiRecorder
         );
 
         if ($jarak > $pengaturan->lokasi_radius_meter) {
+            $this->logLokasiGagal($siswa, $lat, $lng, $accuracy, $jarak, 'luar_radius', $ip, $now);
+
             return [
                 'status' => 'lokasi',
                 'message' => 'Kamu berada di luar radius sekolah, absen tidak bisa dicatat.',
@@ -335,6 +352,108 @@ class AbsensiRecorder
         }
 
         return null;
+    }
+
+    /**
+     * Catat percobaan absen yang ditolak cekLokasi() -- murni audit trail
+     * buat direview manual (pola percobaan berulang dari lokasi jauh, dsb),
+     * tidak pernah dibaca balik buat memblokir apapun. $now dipaksa sebagai
+     * created_at (bukan default Eloquent yang pakai jam sistem asli) supaya
+     * konsisten dengan Absensi::tanggal yang menghormati
+     * Pengaturan::simulasi_waktu -- tanpa ini, baris log bisa "salah hari"
+     * dibanding baris absensi yang jadi konteksnya saat simulasi aktif.
+     */
+    private function logLokasiGagal(
+        Siswa $siswa,
+        ?float $lat,
+        ?float $lng,
+        ?float $accuracy,
+        ?float $jarak,
+        string $alasan,
+        ?string $ip,
+        ?Carbon $now = null,
+    ): void {
+        $waktu = $now ?? Carbon::now();
+
+        AbsensiLokasiGagalLog::create([
+            'siswa_id' => $siswa->id,
+            'lat' => $lat,
+            'lng' => $lng,
+            'accuracy' => $accuracy,
+            'jarak_meter' => $jarak,
+            'alasan' => $alasan,
+            'ip' => $ip,
+            'created_at' => $waktu,
+            'updated_at' => $waktu,
+        ]);
+    }
+
+    /**
+     * Dua ambang ini HARUS dua-duanya kena baru ditandai anomali -- jarak
+     * minimum sendirian menyaring jitter GPS biasa (device GPS meleset
+     * ratusan meter itu wajar), kecepatan minimum sendirian gampang meledak
+     * kalau jeda dua bacaan sangat singkat. Nilai kecepatan sengaja rendah
+     * (bukan kecepatan tol/highway) -- user (pihak sekolah) konfirmasi tidak
+     * ada siswa yang rumahnya >30km dari sekolah, jadi kecepatan wajar buat
+     * pergerakan lokal (motor/mobil kota) sudah cukup, tidak perlu toleransi
+     * buat perjalanan jarak jauh.
+     */
+    private const JARAK_ANOMALI_MIN_METER = 500;
+    private const KECEPATAN_ANOMALI_MAKS_KMH = 80;
+
+    /**
+     * Bandingkan bacaan lokasi "buka halaman" vs "submit absen" (lihat
+     * face-kiosk.js::recordAttendance()) -- kalau jaraknya jauh tapi
+     * jedanya sangat singkat, itu mustahil ditempuh manusia beneran. Murni
+     * audit (dicatat ke absensi_kecepatan_anomali_log), tidak pernah
+     * memblokir absen -- dipanggil di awal record() jadi tetap jalan
+     * walau percobaan itu sendiri nanti ditolak alasan lain (libur, sudah
+     * absen, dst). $now dipaksa sebagai created_at (bukan jam sistem asli)
+     * supaya konsisten dengan Absensi::tanggal yang menghormati
+     * Pengaturan::simulasi_waktu -- tanpa ini, badge "Dicurigai Fake GPS"
+     * di rekap (AbsensiController::index, filter whereDate('created_at', ..))
+     * bisa gagal cocok kalau simulasi lagi aktif di tanggal berbeda dari
+     * jam sistem asli.
+     */
+    private function cekAnomaliKecepatan(
+        Siswa $siswa,
+        ?float $lat,
+        ?float $lng,
+        ?float $latBuka,
+        ?float $lngBuka,
+        ?int $jedaMs,
+        ?Carbon $now = null,
+    ): void {
+        if ($lat === null || $lng === null || $latBuka === null || $lngBuka === null || $jedaMs === null || $jedaMs <= 0) {
+            return;
+        }
+
+        $jarak = $this->jarakMeter($latBuka, $lngBuka, $lat, $lng);
+        if ($jarak < self::JARAK_ANOMALI_MIN_METER) {
+            return;
+        }
+
+        $jamJeda = $jedaMs / 1000 / 3600;
+        $kecepatanKmh = ($jarak / 1000) / $jamJeda;
+
+        if ($kecepatanKmh < self::KECEPATAN_ANOMALI_MAKS_KMH) {
+            return;
+        }
+
+        $waktu = $now ?? Carbon::now();
+
+        AbsensiKecepatanAnomaliLog::create([
+            'siswa_id' => $siswa->id,
+            'lat_buka' => $latBuka,
+            'lng_buka' => $lngBuka,
+            'lat_absen' => $lat,
+            'lng_absen' => $lng,
+            'jarak_meter' => $jarak,
+            'jeda_ms' => $jedaMs,
+            'kecepatan_kmh' => $kecepatanKmh,
+            'created_at' => $waktu,
+            'updated_at' => $waktu,
+        ]);
     }
 
     /**

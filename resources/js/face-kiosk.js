@@ -50,8 +50,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFacingMode = 'user';
 
     // currentPosition di-cache sekali per sesi halaman (bukan watchPosition)
-    // supaya tidak terus-menerus minta lokasi device selama kamera aktif.
+    // supaya tidak terus-menerus minta lokasi device selama kamera aktif --
+    // ini jadi bacaan "lokasi buka halaman". waktuBukaMs pakai performance.now()
+    // (monotonic, kebal geser jam sistem) supaya jeda ke bacaan kedua (saat
+    // submit, lihat recordAttendance()) akurat buat hitung anomali kecepatan
+    // di server -- dua bacaan yang jauh secara fisik dalam waktu sesingkat
+    // itu gak mungkin beneran perpindahan siswa, beda dari sekadar jitter GPS.
     let currentPosition = null;
+    let waktuBukaMs = null;
     let geoStatus = lokasiAktif ? 'pending' : 'off'; // pending|ok|denied|unsupported|off
 
     const GEO_OPTS = { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 };
@@ -78,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lng: pos.coords.longitude,
                 accuracy: pos.coords.accuracy,
             };
+            waktuBukaMs = performance.now();
             geoStatus = 'ok';
         } catch (err) {
             // code 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE,
@@ -163,9 +170,25 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const payload = { siswa_id: siswaId, liveness_verified: true };
             if (currentPosition) {
-                payload.lat = currentPosition.lat;
-                payload.lng = currentPosition.lng;
-                payload.accuracy = currentPosition.accuracy;
+                // Bacaan kedua diambil FRESH di sini (bukan pakai cache
+                // currentPosition yang sama) supaya benar-benar independen
+                // dari bacaan "buka halaman" -- kalau gagal/timeout, jatuh
+                // balik ke cache lama daripada gagalkan seluruh absen cuma
+                // gara-gara bonus pembacaan lokasi ini.
+                let posisiAbsen = currentPosition;
+                try {
+                    const pos = await ambilPosisi();
+                    posisiAbsen = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
+                } catch (err) {
+                    // diamkan -- posisiAbsen tetap pakai currentPosition
+                }
+
+                payload.lat = posisiAbsen.lat;
+                payload.lng = posisiAbsen.lng;
+                payload.accuracy = posisiAbsen.accuracy;
+                payload.lat_buka = currentPosition.lat;
+                payload.lng_buka = currentPosition.lng;
+                payload.jeda_ms = waktuBukaMs !== null ? Math.round(performance.now() - waktuBukaMs) : null;
             }
 
             const res = await fetch(storeUrl, {

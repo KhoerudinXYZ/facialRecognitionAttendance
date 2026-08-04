@@ -14,7 +14,7 @@
             <div class="lg:col-span-1 space-y-6">
                 {{-- Bento Card: Libur Mingguan Otomatis --}}
                 <div class="bento-card rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
-                    <div class="absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">MINGGUAN</div>
+                    <div class="hidden sm:block absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">MINGGUAN</div>
                     
                     <div class="relative z-10">
                         <div class="flex items-center gap-3 mb-4">
@@ -54,7 +54,7 @@
                 
                 {{-- Bento Card: Tambah Tanggal Libur --}}
                 <div class="bento-card rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
-                    <div class="absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">TANGGAL</div>
+                    <div class="hidden sm:block absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">TANGGAL</div>
                     
                     <div class="relative z-10">
                         <div class="flex items-center gap-3 mb-4">
@@ -97,7 +97,7 @@
             <div class="lg:col-span-2">
                 {{-- Bento Card: List Hari Libur --}}
                 <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden h-full">
-                    <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">TERDAFTAR</div>
+                    <div class="hidden sm:block absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">TERDAFTAR</div>
         
                     <div class="flex items-center justify-between pb-5 border-b border-slate-200/50 dark:border-slate-700/50 relative z-10 mb-2">
                         <div>
@@ -159,7 +159,7 @@
         {{-- Bento Card: Kalender Tanggal Merah (pilih tersebar, simpan sekaligus) --}}
         <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden"
              x-data="{ selected: [], keteranganBulk: '' }">
-            <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">TANGGAL MERAH</div>
+            <div class="hidden sm:block absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">TANGGAL MERAH</div>
 
             <div class="relative z-10">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-slate-200/50 dark:border-slate-700/50 mb-5">

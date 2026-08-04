@@ -17,7 +17,7 @@
 
         {{-- Bento Filter Card --}}
         <form method="GET" class="bento-card rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">FILTER</div>
+            <div class="hidden sm:block absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">FILTER</div>
             <div class="flex flex-wrap gap-4 items-end relative z-10">
                 <div>
                     <label for="tanggal" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Tanggal</label>
@@ -64,7 +64,7 @@
 
         {{-- Bento Table Card --}}
         <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">REKAP</div>
+            <div class="hidden sm:block absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">REKAP</div>
 
             <div class="flex items-center justify-between pb-5 border-b border-slate-200/50 dark:border-slate-700/50 relative z-10 mb-2">
                 <div>
@@ -76,7 +76,115 @@
                 </span>
             </div>
 
-            <div class="overflow-x-auto relative z-10">
+            {{-- Kartu, bukan tabel, di bawah sm: -- tabel 8 kolom di layar
+                 sempit cuma bisa dibaca dengan geser-geser ke samping, jadi
+                 di mobile datanya ditampilkan sebagai kartu per siswa
+                 (pola sama seperti roster di dashboard). --}}
+            <div class="sm:hidden space-y-3 relative z-10">
+                @php
+                    $statusBgMobile = [
+                        'hadir' => 'bg-emerald-500 text-white',
+                        'terlambat' => 'bg-amber-500 text-white',
+                        'izin' => 'bg-purple-500 text-white',
+                        'sakit' => 'bg-purple-500 text-white',
+                        'alpha' => 'bg-rose-500 text-white',
+                        'libur' => 'bg-slate-500 text-white',
+                    ];
+                @endphp
+                @forelse ($rekap as $row)
+                    @php $a = $row['absensi']; $s = $row['siswa']; $curigaFakeGps = $row['dicurigaiFakeGps']; @endphp
+                    <div class="rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/40 p-4 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-black font-lexend text-xs flex items-center justify-center shadow-md shrink-0">
+                                    {{ Illuminate\Support\Str::of($s->nama)->substr(0, 1)->upper() }}
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="font-black font-outfit text-slate-800 dark:text-slate-100 block truncate">{{ $s->nama }}</span>
+                                    <span class="inline-flex px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-lexend font-bold text-[10px] mt-1">{{ $s->kelas->nama_kelas ?? '-' }}</span>
+                                </div>
+                            </div>
+                            @if ($a)
+                                <span class="shrink-0 inline-flex px-2.5 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md {{ $statusBgMobile[$a->status] ?? 'bg-slate-500 text-white' }}">{{ $a->status }}</span>
+                            @elseif ($isLibur)
+                                <span class="shrink-0 inline-flex px-2.5 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md bg-slate-500 text-white">Libur</span>
+                            @else
+                                <span class="shrink-0 inline-flex px-2.5 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest shadow-md bg-rose-500 text-white">Alpha</span>
+                            @endif
+                        </div>
+
+                        @if ($curigaFakeGps)
+                            @if (auth()->user()->isAdmin())
+                                <a href="{{ route('absensi.audit-lokasi') }}#anomali-kecepatan"
+                                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-lexend font-bold text-[10px] uppercase tracking-wide">
+                                    <x-icon name="alert-circle" class="w-3 h-3 stroke-[2.5]" />
+                                    Dicurigai Fake GPS
+                                </a>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-lexend font-bold text-[10px] uppercase tracking-wide">
+                                    <x-icon name="alert-circle" class="w-3 h-3 stroke-[2.5]" />
+                                    Dicurigai Fake GPS
+                                </span>
+                            @endif
+                        @endif
+
+                        <div class="flex items-center justify-between text-xs font-lexend font-bold text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <span>Masuk <span class="text-slate-800 dark:text-slate-200 ml-1">{{ $a ? \Illuminate\Support\Str::of($a->jam_masuk)->substr(0,5) : '—:—' }}</span></span>
+                            <span>Pulang <span class="text-slate-800 dark:text-slate-200 ml-1">{{ $a && $a->jam_pulang ? \Illuminate\Support\Str::of($a->jam_pulang)->substr(0,5) : '—:—' }}</span></span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-1.5">
+                            @if ($a)
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-lexend font-bold text-[11px]">
+                                    <x-icon name="{{ $a->metode === 'wajah' ? 'camera' : 'pencil' }}" class="w-3 h-3 stroke-[2.5]" />
+                                    {{ ucfirst($a->metode) }}
+                                </span>
+                            @endif
+                            @if ($a && $a->ip_cocok_sekolah === false)
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-lexend font-bold text-[11px]">
+                                    <x-icon name="wifi" class="w-3 h-3 stroke-[2.5]" />
+                                    Jaringan Lain
+                                </span>
+                            @elseif ($a && $a->ip_cocok_sekolah === true)
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-lexend font-bold text-[11px]">
+                                    <x-icon name="wifi" class="w-3 h-3 stroke-[2.5]" />
+                                    WiFi Sekolah
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <button type="button"
+                                    @click="open = true; siswaId = {{ $s->id }}; siswaNama = '{{ addslashes($s->nama) }}'"
+                                    class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-lexend font-bold text-[11px] uppercase tracking-wider border border-indigo-200/50 dark:border-indigo-800/50">
+                                <x-icon name="pencil" class="w-3.5 h-3.5 stroke-[2.5]" /> Manual
+                            </button>
+                            @if ($a)
+                                {{-- x-confirm-form's own wrapper div is `inline`, not a flex
+                                     item that grows -- wrap it so flex-1 has something to
+                                     apply to, then w-full on the trigger button (buttons are
+                                     inline-block by default, so width does apply) fills it. --}}
+                                <div class="flex-1">
+                                    <x-confirm-form :action="route('absensi.destroy', $a)" title="Hapus absensi {{ $s->nama }} pada tanggal ini?"
+                                                     message="Status akan kembali kosong."
+                                                     trigger-class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-lexend font-bold text-[11px] uppercase tracking-wider border border-rose-200/50 dark:border-rose-800/50">
+                                        <x-icon name="trash" class="w-3.5 h-3.5 stroke-[2.5]" /> Hapus
+                                    </x-confirm-form>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="flex flex-col items-center gap-3 py-12">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
+                            <x-icon name="users" class="w-7 h-7 stroke-[1.5]" />
+                        </div>
+                        <span class="text-sm font-semibold text-slate-500 dark:text-slate-400 font-jakarta">Tidak ada siswa untuk filter ini.</span>
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="hidden sm:block overflow-x-auto relative z-10">
                 <table class="min-w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-200/50 dark:border-slate-700/50">
@@ -92,7 +200,7 @@
                     </thead>
                     <tbody>
                         @forelse ($rekap as $row)
-                            @php $a = $row['absensi']; $s = $row['siswa']; @endphp
+                            @php $a = $row['absensi']; $s = $row['siswa']; $curigaFakeGps = $row['dicurigaiFakeGps']; @endphp
                             <tr class="border-b border-slate-100/50 dark:border-slate-800/50 hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10 transition-colors duration-200">
                                 <td class="px-5 py-4">
                                     <div class="flex items-center gap-3">
@@ -100,6 +208,22 @@
                                             {{ Illuminate\Support\Str::of($s->nama)->substr(0, 1)->upper() }}
                                         </div>
                                         <span class="font-black font-outfit text-slate-800 dark:text-slate-100">{{ $s->nama }}</span>
+                                        @if ($curigaFakeGps)
+                                            @if (auth()->user()->isAdmin())
+                                                <a href="{{ route('absensi.audit-lokasi') }}#anomali-kecepatan"
+                                                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 hover:bg-rose-200 dark:hover:bg-rose-800/50 font-lexend font-bold text-[10px] uppercase tracking-wide transition-colors duration-150"
+                                                   title="Lompatan lokasi GPS mustahil terdeteksi saat absen hari ini -- klik buat lihat detail di Audit Lokasi. Ini sinyal audit, bukan bukti pasti.">
+                                                    <x-icon name="alert-circle" class="w-3 h-3 stroke-[2.5]" />
+                                                    Dicurigai Fake GPS
+                                                </a>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-lexend font-bold text-[10px] uppercase tracking-wide"
+                                                      title="Lompatan lokasi GPS mustahil terdeteksi saat absen hari ini. Ini sinyal audit, bukan bukti pasti.">
+                                                    <x-icon name="alert-circle" class="w-3 h-3 stroke-[2.5]" />
+                                                    Dicurigai Fake GPS
+                                                </span>
+                                            @endif
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-5 py-4">
@@ -197,7 +321,7 @@
              class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" @click.self="open = false">
             <div x-show="open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 scale-95 translate-y-4" x-transition:enter-end="opacity-100 scale-100 translate-y-0" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95 translate-y-4"
                  class="bento-card rounded-[2rem] shadow-2xl w-full max-w-md p-8 relative overflow-hidden">
-                <div class="absolute -right-4 -bottom-4 text-[60px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">MANUAL</div>
+                <div class="hidden sm:block absolute -right-4 -bottom-4 text-[60px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">MANUAL</div>
 
                 <div class="flex items-center gap-3 mb-6 relative z-10">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30">

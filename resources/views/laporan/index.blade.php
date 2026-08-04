@@ -16,7 +16,7 @@
 
         {{-- Bento Filter Card --}}
         <form method="GET" class="bento-card rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">FILTER</div>
+            <div class="hidden sm:block absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">FILTER</div>
             <div class="flex flex-wrap gap-4 items-end relative z-10">
                 <div>
                     <label for="dari" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Dari Tanggal</label>
@@ -72,7 +72,7 @@
 
         {{-- Bento Table Card --}}
         <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">DATA</div>
+            <div class="hidden sm:block absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">DATA</div>
 
             <div class="flex items-center justify-between pb-5 border-b border-slate-200/50 dark:border-slate-700/50 relative z-10 mb-2">
                 <div>
@@ -81,7 +81,47 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto relative z-10">
+            {{-- Kartu di mobile -- tabel 7 kolom gak muat di layar sempit. --}}
+            <div class="sm:hidden space-y-3 relative z-10">
+                @php
+                    $statusBgMobile = [
+                        'hadir' => 'bg-emerald-500 text-white',
+                        'terlambat' => 'bg-amber-500 text-white',
+                        'izin' => 'bg-purple-500 text-white',
+                        'sakit' => 'bg-purple-500 text-white',
+                        'alpha' => 'bg-rose-500 text-white',
+                        'libur' => 'bg-slate-500 text-white',
+                    ];
+                @endphp
+                @forelse ($data as $a)
+                    <div class="rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/40 p-4 space-y-2">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <span class="font-black font-outfit text-slate-800 dark:text-slate-100 block truncate">{{ $a->siswa->nama ?? '-' }}</span>
+                                <span class="text-[11px] font-lexend text-slate-400 dark:text-slate-500">{{ $a->siswa->nis ?? '-' }} &middot; {{ $a->tanggal->format('d/m/Y') }}</span>
+                            </div>
+                            <span class="shrink-0 inline-flex px-2.5 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest {{ $statusBgMobile[$a->status] ?? 'bg-slate-500 text-white' }}">{{ $a->status }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
+                            <span class="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-lexend font-bold">{{ $a->kelas->nama_kelas ?? '-' }}</span>
+                            <span class="font-lexend font-bold text-slate-500 dark:text-slate-400">Masuk {{ \Illuminate\Support\Str::of($a->jam_masuk)->substr(0,5) ?: '—:—' }}</span>
+                            <span class="font-lexend font-bold text-slate-500 dark:text-slate-400">Pulang {{ \Illuminate\Support\Str::of($a->jam_pulang)->substr(0,5) ?: '—:—' }}</span>
+                        </div>
+                        @if ($a->keterangan)
+                            <div class="text-xs font-jakarta font-semibold text-slate-500 dark:text-slate-400">{{ $a->keterangan }}</div>
+                        @endif
+                    </div>
+                @empty
+                    <div class="flex flex-col items-center gap-3 py-12">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
+                            <x-icon name="clipboard" class="w-7 h-7 stroke-[1.5]" />
+                        </div>
+                        <span class="text-sm font-semibold text-slate-500 dark:text-slate-400 font-jakarta">Tidak ada data pada periode ini.</span>
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="hidden sm:block overflow-x-auto relative z-10">
                 <table class="min-w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-200/50 dark:border-slate-700/50">

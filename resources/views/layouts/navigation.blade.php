@@ -49,7 +49,7 @@
                     @endif
 
                     @if (Auth::user()->isAdmin())
-                        <x-nav-dropdown title="{{ __('Administrasi') }}" icon="cog" :active="request()->routeIs(['staff.*', 'pengaturan.*', 'hari-libur.*', 'absensi.audit', 'notifikasi-absensi.*'])">
+                        <x-nav-dropdown title="{{ __('Administrasi') }}" icon="cog" :active="request()->routeIs(['staff.*', 'pengaturan.*', 'hari-libur.*', 'absensi.audit', 'absensi.audit-lokasi', 'notifikasi-absensi.*'])">
                             <x-dropdown-link :href="route('staff.index')">
                                 {{ __('Staff') }}
                             </x-dropdown-link>
@@ -61,6 +61,9 @@
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('absensi.audit')">
                                 {{ __('Riwayat Hapus Absensi') }}
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('absensi.audit-lokasi')">
+                                {{ __('Audit Lokasi') }}
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('notifikasi-absensi.index')">
                                 {{ __('Notifikasi Orang Tua') }}
@@ -178,32 +181,32 @@
                 <span class="inline-flex items-center gap-1.5"><x-icon name="home" class="w-4 h-4" />{{ __('Dashboard') }}</span>
             </x-responsive-nav-link>
 
-            <div class="px-4 pt-2 pb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">
-                <x-icon name="check-circle" class="w-3.5 h-3.5" /> {{ __('Presensi') }}
-            </div>
-            <x-responsive-nav-link :href="route('absensi.index')" :active="request()->routeIs('absensi.index')">
-                {{ __('Rekap') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('laporan.index')" :active="request()->routeIs('laporan.*')">
-                {{ __('Laporan') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('pengajuan-izin.index')" :active="request()->routeIs('pengajuan-izin.*')">
-                {{ __('Pengajuan Izin/Sakit') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('koreksi-absensi.index')" :active="request()->routeIs('koreksi-absensi.*')">
-                {{ __('Koreksi Absensi') }}
-            </x-responsive-nav-link>
+            <x-responsive-nav-section title="{{ __('Presensi') }}" icon="check-circle"
+                :active="request()->routeIs(['absensi.*', 'laporan.*', 'pengajuan-izin.*', 'koreksi-absensi.*'])">
+                <x-responsive-nav-link :href="route('absensi.index')" :active="request()->routeIs('absensi.index')">
+                    {{ __('Rekap') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('laporan.index')" :active="request()->routeIs('laporan.*')">
+                    {{ __('Laporan') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('pengajuan-izin.index')" :active="request()->routeIs('pengajuan-izin.*')">
+                    {{ __('Pengajuan Izin/Sakit') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('koreksi-absensi.index')" :active="request()->routeIs('koreksi-absensi.*')">
+                    {{ __('Koreksi Absensi') }}
+                </x-responsive-nav-link>
+            </x-responsive-nav-section>
 
             @if (Auth::user()->isAdmin())
-                <div class="px-4 pt-2 pb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">
-                    <x-icon name="database" class="w-3.5 h-3.5" /> {{ __('Data Master') }}
-                </div>
-                <x-responsive-nav-link :href="route('siswa.index')" :active="request()->routeIs('siswa.*')">
-                    {{ __('Siswa') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('kelas.index')" :active="request()->routeIs('kelas.*')">
-                    {{ __('Kelas') }}
-                </x-responsive-nav-link>
+                <x-responsive-nav-section title="{{ __('Data Master') }}" icon="database"
+                    :active="request()->routeIs(['siswa.*', 'kelas.*'])">
+                    <x-responsive-nav-link :href="route('siswa.index')" :active="request()->routeIs('siswa.*')">
+                        {{ __('Siswa') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('kelas.index')" :active="request()->routeIs('kelas.*')">
+                        {{ __('Kelas') }}
+                    </x-responsive-nav-link>
+                </x-responsive-nav-section>
             @else
                 <x-responsive-nav-link :href="route('siswa.index')" :active="request()->routeIs('siswa.*')">
                     <span class="inline-flex items-center gap-1.5">
@@ -214,36 +217,38 @@
             @endif
 
             @if (Auth::user()->isWaliKelas() && ($reminderPerluPerhatian->isNotEmpty() || $reminderBelumWajah->isNotEmpty()))
-                <div class="px-4 pt-2 pb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">
-                    <x-icon name="bell" class="w-3.5 h-3.5" /> Pengingat
-                </div>
-                @foreach ($reminderPerluPerhatian as $s)
-                    <x-responsive-nav-link :href="route('siswa.show', $s)">{{ $s->nama }} — belum absen 3 hari</x-responsive-nav-link>
-                @endforeach
-                @foreach ($reminderBelumWajah as $s)
-                    <x-responsive-nav-link :href="route('siswa.enroll', $s)">{{ $s->nama }} — belum daftar wajah</x-responsive-nav-link>
-                @endforeach
+                <x-responsive-nav-section title="Pengingat" icon="bell" :active="true">
+                    @foreach ($reminderPerluPerhatian as $s)
+                        <x-responsive-nav-link :href="route('siswa.show', $s)">{{ $s->nama }} — belum absen 3 hari</x-responsive-nav-link>
+                    @endforeach
+                    @foreach ($reminderBelumWajah as $s)
+                        <x-responsive-nav-link :href="route('siswa.enroll', $s)">{{ $s->nama }} — belum daftar wajah</x-responsive-nav-link>
+                    @endforeach
+                </x-responsive-nav-section>
             @endif
 
             @if (Auth::user()->isAdmin())
-                <div class="px-4 pt-2 pb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase">
-                    <x-icon name="cog" class="w-3.5 h-3.5" /> {{ __('Administrasi') }}
-                </div>
-                <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">
-                    {{ __('Staff') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('pengaturan.edit')" :active="request()->routeIs('pengaturan.*')">
-                    {{ __('Pengaturan') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('hari-libur.index')" :active="request()->routeIs('hari-libur.*')">
-                    {{ __('Hari Libur') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('absensi.audit')" :active="request()->routeIs('absensi.audit')">
-                    {{ __('Riwayat Hapus Absensi') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('notifikasi-absensi.index')" :active="request()->routeIs('notifikasi-absensi.*')">
-                    {{ __('Notifikasi Orang Tua') }}
-                </x-responsive-nav-link>
+                <x-responsive-nav-section title="{{ __('Administrasi') }}" icon="cog"
+                    :active="request()->routeIs(['staff.*', 'pengaturan.*', 'hari-libur.*', 'absensi.audit', 'absensi.audit-lokasi', 'notifikasi-absensi.*'])">
+                    <x-responsive-nav-link :href="route('staff.index')" :active="request()->routeIs('staff.*')">
+                        {{ __('Staff') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('pengaturan.edit')" :active="request()->routeIs('pengaturan.*')">
+                        {{ __('Pengaturan') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('hari-libur.index')" :active="request()->routeIs('hari-libur.*')">
+                        {{ __('Hari Libur') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('absensi.audit')" :active="request()->routeIs('absensi.audit')">
+                        {{ __('Riwayat Hapus Absensi') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('absensi.audit-lokasi')" :active="request()->routeIs('absensi.audit-lokasi')">
+                        {{ __('Audit Lokasi') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('notifikasi-absensi.index')" :active="request()->routeIs('notifikasi-absensi.*')">
+                        {{ __('Notifikasi Orang Tua') }}
+                    </x-responsive-nav-link>
+                </x-responsive-nav-section>
             @endif
         </div>
 

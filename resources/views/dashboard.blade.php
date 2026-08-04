@@ -62,7 +62,7 @@
             @endphp
             @foreach ($cards as $c)
                 <a href="{{ $c['route'] }}" class="bento-card rounded-[2rem] p-6 shadow-xl relative overflow-hidden group border {{ $c['border'] }} transition-all duration-500 hover:scale-[1.03]">
-                    <div class="absolute -right-4 -bottom-6 text-[90px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none transition-transform duration-700 group-hover:scale-110">
+                    <div class="hidden sm:block absolute -right-4 -bottom-6 text-[90px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none transition-transform duration-700 group-hover:scale-110">
                         {{ $c['watermark'] }}
                     </div>
                     

@@ -22,11 +22,15 @@ class Absensi extends Model
         'keterangan',
         'ip_request',
         'ip_cocok_sekolah',
+        'lat',
+        'lng',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
         'ip_cocok_sekolah' => 'boolean',
+        'lat' => 'decimal:7',
+        'lng' => 'decimal:7',
     ];
 
     public function siswa(): BelongsTo

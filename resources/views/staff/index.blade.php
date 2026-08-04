@@ -28,7 +28,7 @@
 
         {{-- Bento Table Card --}}
         <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">STAFF</div>
+            <div class="hidden sm:block absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">STAFF</div>
 
             <div class="flex items-center justify-between pb-5 border-b border-slate-200/50 dark:border-slate-700/50 relative z-10 mb-2">
                 <div>
@@ -37,7 +37,80 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto relative z-10">
+            {{-- Kartu di mobile -- tabel 5 kolom gak muat di layar sempit. --}}
+            <div class="sm:hidden space-y-3 relative z-10">
+                @forelse ($staff as $s)
+                    <div class="rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/40 p-4 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-500 to-slate-700 text-white font-black font-lexend text-xs flex items-center justify-center shadow-md shrink-0">
+                                {{ Illuminate\Support\Str::of($s->name)->substr(0, 1)->upper() }}
+                            </div>
+                            <div class="min-w-0">
+                                <span class="font-black font-outfit text-slate-800 dark:text-slate-100 text-base block truncate">{{ $s->name }}</span>
+                                <span class="text-[11px] font-jakarta font-semibold text-slate-400 dark:text-slate-500 block truncate">{{ $s->email }}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            @if ($s->role === 'admin')
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-indigo-500 to-purple-500 text-white uppercase tracking-widest">
+                                    <x-icon name="cog" class="w-3 h-3" /> Administrator
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-gradient-to-r from-sky-500 to-blue-600 text-white uppercase tracking-widest">
+                                    <x-icon name="user-circle" class="w-3 h-3" /> Wali Kelas
+                                </span>
+                            @endif
+                            @if ($s->role === 'wali_kelas' && $s->kelasBinaan->isNotEmpty())
+                                <span class="inline-flex px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-lexend font-bold text-[11px]">
+                                    {{ $s->kelasBinaan->pluck('nama_kelas')->join(', ') }}
+                                </span>
+                            @endif
+                        </div>
+
+                        @if ($s->role === 'wali_kelas')
+                            <div>
+                                @if ($isLibur)
+                                    <span class="inline-flex px-2.5 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest bg-slate-500 text-white">Libur</span>
+                                @elseif ($s->total_siswa_binaan === 0)
+                                    <span class="text-[11px] font-jakarta font-semibold text-slate-400 dark:text-slate-500">Belum ada kelas</span>
+                                @else
+                                    <span @class([
+                                            'inline-flex px-2.5 py-1 rounded-full text-[10px] font-black font-lexend uppercase tracking-widest',
+                                            'bg-emerald-500 text-white' => $s->hadir_hari_ini_binaan >= $s->total_siswa_binaan,
+                                            'bg-amber-500 text-white' => $s->hadir_hari_ini_binaan > 0 && $s->hadir_hari_ini_binaan < $s->total_siswa_binaan,
+                                            'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400' => $s->hadir_hari_ini_binaan === 0,
+                                        ])>
+                                        {{ $s->hadir_hari_ini_binaan }} / {{ $s->total_siswa_binaan }} Hadir
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <a href="{{ route('staff.edit', $s) }}"
+                               class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-lexend font-bold text-[11px] uppercase tracking-wider border border-indigo-200/50 dark:border-indigo-800/50">
+                                <x-icon name="pencil" class="w-3.5 h-3.5 stroke-[2.5]" /> Edit
+                            </a>
+                            @if ($s->id !== auth()->id())
+                                <x-confirm-form :action="route('staff.destroy', $s)" title="Hapus akun staff ini?"
+                                                 trigger-class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 font-lexend font-bold text-[11px] uppercase tracking-wider border border-rose-200/50 dark:border-rose-800/50">
+                                    <x-icon name="trash" class="w-3.5 h-3.5 stroke-[2.5]" /> Hapus
+                                </x-confirm-form>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="flex flex-col items-center gap-3 py-12">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
+                            <x-icon name="users" class="w-7 h-7 stroke-[1.5]" />
+                        </div>
+                        <span class="text-sm font-semibold text-slate-500 dark:text-slate-400 font-jakarta">Belum ada akun staff.</span>
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="hidden sm:block overflow-x-auto relative z-10">
                 <table class="min-w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-200/50 dark:border-slate-700/50">

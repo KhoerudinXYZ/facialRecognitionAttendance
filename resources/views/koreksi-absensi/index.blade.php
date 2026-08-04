@@ -24,7 +24,7 @@
     <div class="py-8 max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
         {{-- Bento Filter Card --}}
         <form method="GET" class="bento-card rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">KOREKSI</div>
+            <div class="hidden sm:block absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">KOREKSI</div>
             <div class="flex flex-wrap gap-4 items-end relative z-10">
                 <div class="min-w-40">
                     <label for="status" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Status</label>
@@ -60,7 +60,7 @@
                     @if ($k->status === 'menunggu')
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 rounded-t-[2rem]"></div>
                     @endif
-                    <div class="absolute -right-4 -bottom-4 text-[50px] font-black text-slate-900/[0.025] dark:text-white/[0.015] font-lexend tracking-tighter leading-none select-none uppercase">Koreksi</div>
+                    <div class="hidden sm:block absolute -right-4 -bottom-4 text-[50px] font-black text-slate-900/[0.025] dark:text-white/[0.015] font-lexend tracking-tighter leading-none select-none uppercase">Koreksi</div>
                 </div>
 
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">

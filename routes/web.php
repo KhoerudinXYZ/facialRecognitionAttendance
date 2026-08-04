@@ -101,6 +101,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('hari-libur/{hariLibur}', [HariLiburController::class, 'destroy'])->name('hari-libur.destroy');
 
         Route::get('absensi/audit', [AbsensiController::class, 'audit'])->name('absensi.audit');
+        Route::get('absensi/audit-lokasi', [AbsensiController::class, 'auditLokasi'])->name('absensi.audit-lokasi');
 
         Route::get('notifikasi-absensi', [NotifikasiAbsensiController::class, 'index'])->name('notifikasi-absensi.index');
     });

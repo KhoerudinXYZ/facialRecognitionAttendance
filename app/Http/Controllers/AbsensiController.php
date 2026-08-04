@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Absensi;
 use App\Models\AbsensiAuditLog;
+use App\Models\AbsensiKecepatanAnomaliLog;
+use App\Models\AbsensiLokasiGagalLog;
 use App\Models\HariLibur;
 use App\Models\Kelas;
 use App\Models\Siswa;
@@ -39,9 +41,19 @@ class AbsensiController extends Controller
             ->get()
             ->keyBy('siswa_id');
 
+        // Siswa yang absennya hari itu memicu anomali kecepatan (lihat
+        // AbsensiRecorder::cekAnomaliKecepatan()) -- dipakai buat nampilkan
+        // badge kecurigaan di rekap, murni informasi buat wali kelas/admin,
+        // sama sekali tidak mengubah status absensinya.
+        $siswaAnomali = AbsensiKecepatanAnomaliLog::whereDate('created_at', $tanggal)
+            ->whereIn('siswa_id', $siswaList->pluck('id'))
+            ->pluck('siswa_id')
+            ->unique();
+
         $rekap = $siswaList->map(fn (Siswa $s) => [
             'siswa' => $s,
             'absensi' => $absensiMap->get($s->id),
+            'dicurigaiFakeGps' => $siswaAnomali->contains($s->id),
         ]);
 
         $kelasList = Kelas::visibleTo($request->user())->orderBy('nama_kelas')->get();
@@ -115,5 +127,35 @@ class AbsensiController extends Controller
         $log = AbsensiAuditLog::orderByDesc('created_at')->paginate(30);
 
         return view('absensi.audit', compact('log'));
+    }
+
+    /**
+     * Dua sinyal audit lokasi -- cuma buat direview manual wali kelas/admin,
+     * tidak ada satupun yang otomatis memblokir absen: (1) percobaan yang
+     * ditolak cekLokasi() (lihat AbsensiRecorder), dan (2) lompatan lokasi
+     * mustahil antara bacaan GPS "buka halaman" vs "submit absen" (lihat
+     * AbsensiRecorder::cekAnomaliKecepatan()).
+     *
+     * Sebelumnya ada sinyal ketiga ("Koordinat Kembar" -- siswa berbeda
+     * dengan koordinat nyaris identik) tapi dihapus: uji nyata di lapangan
+     * pakai app fake-GPS gratisan menunjukkan bucket-nya (dibulatkan ~1m)
+     * nyaris tidak pernah kena karena app itu sendiri sudah nambahin jitter
+     * beberapa meter. Anomali kecepatan terbukti jauh lebih efektif nangkep
+     * kasus nyata (lihat memory audit-lokasi-anti-spoofing).
+     */
+    public function auditLokasi(): View
+    {
+        $gagalLog = AbsensiLokasiGagalLog::with('siswa')
+            ->orderByDesc('created_at')
+            ->paginate(30);
+
+        $anomaliKecepatan = AbsensiKecepatanAnomaliLog::with('siswa')
+            ->orderByDesc('created_at')
+            ->paginate(30, ['*'], 'anomali_page');
+
+        return view('absensi.audit-lokasi', [
+            'gagalLog' => $gagalLog,
+            'anomaliKecepatan' => $anomaliKecepatan,
+        ]);
     }
 }

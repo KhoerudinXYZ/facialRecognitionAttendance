@@ -33,7 +33,7 @@
     <div class="py-8 max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
         {{-- Bento Filter Card --}}
         <form method="GET" class="bento-card rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">IZIN</div>
+            <div class="hidden sm:block absolute -right-4 -bottom-4 text-[70px] font-black text-slate-900/[0.03] dark:text-white/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none">IZIN</div>
             <div class="flex flex-wrap gap-4 items-end relative z-10">
                 <div class="min-w-40">
                     <label for="status" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Status</label>
@@ -64,16 +64,20 @@
 
         {{-- Bento Cards Pengajuan --}}
         @forelse ($pengajuanList as $p)
-            <div class="bento-card rounded-[2rem] p-6 sm:p-7 shadow-xl relative group transition-all duration-300 hover:scale-[1.005] overflow-x-auto {{ $p->status === 'menunggu' ? 'border-amber-200/50 dark:border-amber-800/30' : '' }}">
+            <div class="bento-card rounded-[2rem] p-6 sm:p-7 shadow-xl relative group transition-all duration-300 hover:scale-[1.005] {{ $p->status === 'menunggu' ? 'border-amber-200/50 dark:border-amber-800/30' : '' }}">
                 {{-- Decorative overlay (overflow-hidden isolated agar tidak clip modal) --}}
                 <div class="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
                     @if ($p->status === 'menunggu')
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 rounded-t-[2rem]"></div>
                     @endif
-                    <div class="absolute -right-4 -bottom-4 text-[50px] font-black text-slate-900/[0.025] dark:text-white/[0.015] font-lexend tracking-tighter leading-none select-none uppercase">{{ $p->jenis }}</div>
+                    <div class="hidden sm:block absolute -right-4 -bottom-4 text-[50px] font-black text-slate-900/[0.025] dark:text-white/[0.015] font-lexend tracking-tighter leading-none select-none uppercase">{{ $p->jenis }}</div>
                 </div>
 
-                <div class="flex items-center justify-between gap-5 relative z-10 min-w-max">
+                {{-- flex-col di mobile -- versi lama flex-row + min-w-max
+                     mengunci kartu ini jadi satu baris lebar yang mesti
+                     digeser ke samping buat lihat semua info, persis
+                     masalah yang sama dengan tabel biasa. --}}
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 relative z-10">
                     {{-- Left: Student Info --}}
                     <div class="flex items-center gap-4 flex-1 min-w-0">
                         <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-black font-lexend flex items-center justify-center shadow-lg shadow-indigo-500/30 shrink-0 text-lg leading-none">{{ Illuminate\Support\Str::of($p->siswa->nama)->substr(0, 1)->upper() }}</div>

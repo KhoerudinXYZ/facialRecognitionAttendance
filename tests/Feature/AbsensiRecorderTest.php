@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Mail\SiswaHadirMail;
 use App\Models\Absensi;
+use App\Models\AbsensiLokasiGagalLog;
 use App\Models\HariLibur;
 use App\Models\Kelas;
 use App\Models\Pengaturan;
@@ -201,6 +202,7 @@ class AbsensiRecorderTest extends TestCase
 
         $this->assertSame('success', $result['status']);
         $this->assertDatabaseHas('absensi', ['siswa_id' => $siswa->id, 'jam_masuk' => '07:00:00']);
+        $this->assertDatabaseHas('absensi', ['siswa_id' => $siswa->id, 'lat' => -6.9147, 'lng' => 107.6098]);
     }
 
     public function test_lokasi_dikonfigurasi_dan_di_luar_radius_ditolak(): void
@@ -214,6 +216,10 @@ class AbsensiRecorderTest extends TestCase
 
         $this->assertSame('lokasi', $result['status']);
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
+
+        $log = AbsensiLokasiGagalLog::where('siswa_id', $siswa->id)->firstOrFail();
+        $this->assertSame('luar_radius', $log->alasan);
+        $this->assertGreaterThan(100, (float) $log->jarak_meter);
     }
 
     public function test_lokasi_dikonfigurasi_akurasi_gps_terlalu_buruk_ditolak(): void
@@ -229,6 +235,11 @@ class AbsensiRecorderTest extends TestCase
 
         $this->assertSame('lokasi', $result['status']);
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
+
+        $this->assertDatabaseHas('absensi_lokasi_gagal_log', [
+            'siswa_id' => $siswa->id,
+            'alasan' => 'akurasi_kurang',
+        ]);
     }
 
     public function test_lokasi_dikonfigurasi_akurasi_gps_wajar_tetap_diterima(): void
@@ -252,6 +263,56 @@ class AbsensiRecorderTest extends TestCase
 
         $this->assertSame('lokasi', $result['status']);
         $this->assertDatabaseMissing('absensi', ['siswa_id' => $siswa->id]);
+
+        $this->assertDatabaseHas('absensi_lokasi_gagal_log', [
+            'siswa_id' => $siswa->id,
+            'alasan' => 'tidak_terkirim',
+            'lat' => null,
+            'lng' => null,
+        ]);
+    }
+
+    public function test_anomali_kecepatan_terdeteksi_kalau_jarak_jauh_dalam_waktu_singkat(): void
+    {
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        $siswa = $this->siswa();
+
+        // ~20km dari lokasi buka halaman, tapi jeda ke submit cuma 60 detik
+        // -- mustahil ditempuh manusia beneran (~1200 km/jam tersirat).
+        app(AbsensiRecorder::class)->record(
+            $siswa, -6.9147000, 107.6098000, true, null, null,
+            -6.7347000, 107.6098000, 60000,
+        );
+
+        $this->assertDatabaseHas('absensi_kecepatan_anomali_log', ['siswa_id' => $siswa->id]);
+    }
+
+    public function test_anomali_kecepatan_tidak_terdeteksi_kalau_jeda_wajar_untuk_jaraknya(): void
+    {
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        $siswa = $this->siswa();
+
+        // ~20km, tapi jeda 30 menit (1800000ms) -- ~40 km/jam, wajar buat naik mobil.
+        app(AbsensiRecorder::class)->record(
+            $siswa, -6.9147000, 107.6098000, true, null, null,
+            -6.7347000, 107.6098000, 1_800_000,
+        );
+
+        $this->assertDatabaseMissing('absensi_kecepatan_anomali_log', ['siswa_id' => $siswa->id]);
+    }
+
+    public function test_anomali_kecepatan_tidak_terdeteksi_kalau_jaraknya_cuma_jitter_gps(): void
+    {
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        $siswa = $this->siswa();
+
+        // Beda cuma beberapa meter (jitter GPS wajar) walau jedanya singkat.
+        app(AbsensiRecorder::class)->record(
+            $siswa, -6.9147000, 107.6098000, true, null, null,
+            -6.9147050, 107.6098050, 2000,
+        );
+
+        $this->assertDatabaseMissing('absensi_kecepatan_anomali_log', ['siswa_id' => $siswa->id]);
     }
 
     public function test_siswa_yang_sudah_ditandai_alpha_tapi_lalu_scan_beneran_menimpa_jadi_hadir(): void
