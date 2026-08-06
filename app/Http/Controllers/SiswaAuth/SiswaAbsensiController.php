@@ -102,8 +102,8 @@ class SiswaAbsensiController extends Controller
         $jamMasukMulai = Carbon::parse($today->toDateString() . ' ' . $pengaturan->jam_masuk);
         if ((! $absenHariIni || $absenHariIni->status === 'alpha') && $now->lessThan($jamMasukMulai)) {
             $kameraTerkunci = true;
-            $pesanTerkunci = 'Absen masuk dibuka pukul '
-                . \Illuminate\Support\Str::of($pengaturan->jam_masuk)->substr(0, 5) . '.';
+            $pesanTerkunci = 'Absen masuk belum dibuka (pukul '
+                . \Illuminate\Support\Str::of($pengaturan->jam_masuk)->substr(0, 5) . ').';
         }
 
         $siswa->load('faceDescriptors');
