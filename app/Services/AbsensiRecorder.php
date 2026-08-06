@@ -193,9 +193,10 @@ class AbsensiRecorder
             if ($pengaturan->batas_pulang) {
                 $batasPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->batas_pulang);
                 if ($now->greaterThan($batasPulang)) {
+                    $jamBatas = \Illuminate\Support\Str::of($pengaturan->batas_pulang)->substr(0, 5);
                     return [
                         'status'  => 'tutup',
-                        'message' => "Jam absen pulang sudah ditutup untuk hari ini (batas {$pengaturan->batas_pulang}).",
+                        'message' => "Absen pulang sudah ditutup (batas {$jamBatas}).",
                         'nama'    => $siswa->nama,
                     ];
                 }
