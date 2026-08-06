@@ -14,6 +14,7 @@ class Pengaturan extends Model
         'jam_masuk',
         'batas_terlambat',
         'mulai_pulang',
+        'batas_pulang',
         'jam_cek_belum_hadir',
         'simulasi_waktu',
         'lokasi_lat',

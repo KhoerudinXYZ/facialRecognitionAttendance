@@ -77,6 +77,16 @@ class SiswaAbsensiController extends Controller
             }
         }
 
+        // Pengecekan batas akhir absen pulang jika dikonfigurasi
+        if ($absenHariIni && $absenHariIni->jam_masuk && ! $absenHariIni->jam_pulang && $pengaturan->batas_pulang) {
+            $batasPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->batas_pulang);
+            if ($now->greaterThan($batasPulang)) {
+                $jamBatasPulang = \Illuminate\Support\Str::of($pengaturan->batas_pulang)->substr(0, 5);
+                $kameraTerkunci = true;
+                $pesanTerkunci = "Jam absen pulang sudah ditutup untuk hari ini (batas {$jamBatasPulang}).";
+            }
+        }
+
         // Sama seperti gate di AbsensiRecorder: siswa yang belum absen masuk
         // sama sekali (atau masih alpha) tidak perlu buka kamera segala kalau
         // jam absen masuk sudah ditutup — tidak ada yang bisa dicatat.

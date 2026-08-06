@@ -586,4 +586,49 @@ class AbsensiRecorderTest extends TestCase
         ]);
         Http::assertNothingSent();
     }
+
+    public function test_absen_pulang_ditolak_jika_melewati_batas_pulang(): void
+    {
+        Pengaturan::get()->update([
+            'jam_masuk' => '07:00',
+            'batas_terlambat' => '08:00',
+            'mulai_pulang' => '13:00',
+            'batas_pulang' => '17:00',
+        ]);
+
+        Carbon::setTestNow('2026-07-13 07:15:00');
+        $siswa = $this->siswa();
+        app(AbsensiRecorder::class)->record($siswa);
+
+        Carbon::setTestNow('2026-07-13 17:30:00');
+        $result = app(AbsensiRecorder::class)->record($siswa);
+
+        $this->assertSame('tutup', $result['status']);
+        $this->assertStringContainsString('Jam absen pulang sudah ditutup', $result['message']);
+        $this->assertDatabaseHas('absensi', [
+            'siswa_id' => $siswa->id,
+            'jam_pulang' => null,
+        ]);
+    }
+
+    public function test_absen_pulang_mengirim_notifikasi_pulang(): void
+    {
+        Mail::fake();
+        Pengaturan::get()->update(['batas_terlambat' => '08:00', 'mulai_pulang' => '13:00']);
+
+        Carbon::setTestNow('2026-07-13 07:00:00');
+        $siswa = $this->siswa(['email_orang_tua' => 'ortu@example.com']);
+        app(AbsensiRecorder::class)->record($siswa);
+
+        Carbon::setTestNow('2026-07-13 13:30:00');
+        app(AbsensiRecorder::class)->record($siswa);
+
+        Mail::assertQueued(\App\Mail\SiswaPulangMail::class, 1);
+        $this->assertDatabaseHas('notifikasi_absensi_log', [
+            'siswa_id' => $siswa->id,
+            'jenis' => 'pulang',
+            'kanal' => 'email',
+            'status' => 'terkirim',
+        ]);
+    }
 }

@@ -66,7 +66,7 @@
 ## Slide 7 — Pengaturan Fleksibel oleh Sekolah
 - Jam masuk & batas terlambat bisa diatur sendiri
 - **Hari libur**: tanggal manual, atau centang sekali untuk libur mingguan (Sabtu/Minggu) — tidak perlu diulang tiap minggu
-- **(Opsional)** Verifikasi lokasi GPS — absen ditolak jika siswa di luar radius area sekolah, titik & radius sekolah tinggal diklik di peta
+- **Verifikasi lokasi GPS — wajib aktif** di sekolah ini: absen ditolak kalau siswa di luar radius area sekolah, titik & radius sekolah tinggal diklik di peta
 - **(Opsional, baru)** Verifikasi jaringan WiFi sekolah — daftar IP sekolah bisa diisi admin sebagai sinyal audit tambahan (lihat Slide 9)
 
 ---

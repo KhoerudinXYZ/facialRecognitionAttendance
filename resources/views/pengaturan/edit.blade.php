@@ -8,13 +8,13 @@
         </div>
     </x-slot>
 
-    <div class="py-8 max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-8 max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
         
-        {{-- Simulasi Waktu Card (Yellow Warning Style) -- disembunyikan
-             (bukan dihapus) sebelum deploy production, fitur testing ini
-             gampang dinyalakan lagi lokal kalau perlu: tinggal hapus
-             class `hidden` di bawah ini. --}}
-        <div class="hidden bento-card rounded-[2rem] p-6 border-amber-200/50 dark:border-amber-800/40 relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 backdrop-blur-md">
+        {{-- Simulasi Waktu Card (Yellow Warning Style) -- disembunyikan (tidak dibutuhkan sekolah).
+             Untuk mengaktifkan kembali, ganti @if (false) menjadi:
+             @if (app()->environment('local') || config('app.debug') || $pengaturan->simulasi_waktu) --}}
+        @if (false)
+        <div class="bento-card rounded-[2rem] p-6 border-amber-200/50 dark:border-amber-800/40 relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 backdrop-blur-md">
             <div class="absolute -right-4 -bottom-4 text-[70px] font-black text-amber-900/[0.05] dark:text-amber-100/[0.03] font-lexend pointer-events-none tracking-tighter leading-none select-none">TEST</div>
             
             <div class="relative z-10">
@@ -72,6 +72,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Bento Card: Waktu Absensi --}}
         <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
@@ -97,24 +98,42 @@
                                value="{{ old('nama_sekolah', $pengaturan->nama_sekolah) }}" />
                     </div>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <div>
-                            <label for="jam_masuk" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Jam Masuk</label>
-                            <input id="jam_masuk" name="jam_masuk" type="time" required
-                                   class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 backdrop-blur-sm px-4 py-2.5"
-                                   value="{{ old('jam_masuk', \Illuminate\Support\Str::of($pengaturan->jam_masuk)->substr(0,5)) }}" />
+                    <!-- Baris 1: Aturan Jam Masuk -->
+                    <div class="space-y-2">
+                        <span class="text-[10px] font-black uppercase tracking-widest font-lexend text-indigo-600 dark:text-indigo-400">Aturan Jam Masuk</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <label for="jam_masuk" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Jam Masuk</label>
+                                <input id="jam_masuk" name="jam_masuk" type="time" required
+                                       class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 backdrop-blur-sm px-4 py-2.5"
+                                       value="{{ old('jam_masuk', \Illuminate\Support\Str::of($pengaturan->jam_masuk)->substr(0,5)) }}" />
+                            </div>
+                            <div>
+                                <label for="batas_terlambat" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Batas Terlambat</label>
+                                <input id="batas_terlambat" name="batas_terlambat" type="time" required
+                                       class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 backdrop-blur-sm px-4 py-2.5"
+                                       value="{{ old('batas_terlambat', \Illuminate\Support\Str::of($pengaturan->batas_terlambat)->substr(0,5)) }}" />
+                            </div>
                         </div>
-                        <div>
-                            <label for="batas_terlambat" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Batas Terlambat</label>
-                            <input id="batas_terlambat" name="batas_terlambat" type="time" required
-                                   class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 backdrop-blur-sm px-4 py-2.5"
-                                   value="{{ old('batas_terlambat', \Illuminate\Support\Str::of($pengaturan->batas_terlambat)->substr(0,5)) }}" />
-                        </div>
-                        <div>
-                            <label for="mulai_pulang" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Mulai Jam Pulang</label>
-                            <input id="mulai_pulang" name="mulai_pulang" type="time" required
-                                   class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 backdrop-blur-sm px-4 py-2.5"
-                                   value="{{ old('mulai_pulang', \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5)) }}" />
+                    </div>
+
+                    <!-- Baris 2: Aturan Jam Pulang (Ditaruh sedikit lebih bawah) -->
+                    <div class="space-y-2 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+                        <span class="text-[10px] font-black uppercase tracking-widest font-lexend text-indigo-600 dark:text-indigo-400">Aturan Jam Pulang</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <label for="mulai_pulang" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Mulai Jam Pulang</label>
+                                <input id="mulai_pulang" name="mulai_pulang" type="time" required
+                                       class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 backdrop-blur-sm px-4 py-2.5"
+                                       value="{{ old('mulai_pulang', \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5)) }}" />
+                            </div>
+                            <div>
+                                <label for="batas_pulang" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500 mb-1.5">Batas Akhir Pulang (opsional)</label>
+                                <input id="batas_pulang" name="batas_pulang" type="time"
+                                       class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 backdrop-blur-sm px-4 py-2.5"
+                                       value="{{ old('batas_pulang', $pengaturan->batas_pulang ? \Illuminate\Support\Str::of($pengaturan->batas_pulang)->substr(0,5) : '') }}"
+                                       placeholder="Contoh: 18:00" />
+                            </div>
                         </div>
                     </div>
                     
@@ -122,26 +141,11 @@
                         <x-icon name="information-circle" class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-jakarta leading-relaxed">
                             Siswa yang absen setelah <strong>Batas Terlambat</strong> otomatis berstatus <span class="font-bold text-amber-500">terlambat</span>.
-                            Scan wajah kedua di hari yang sama baru dihitung sebagai <span class="font-bold text-indigo-500">absen pulang</span> setelah <strong>Mulai Jam Pulang</strong>.
+                            Scan wajah kedua di hari yang sama dihitung sebagai <span class="font-bold text-indigo-500">absen pulang</span> antara <strong>Mulai Jam Pulang</strong> sampai <strong>Batas Akhir Pulang</strong> (bila dikosongkan, batas maksimal sampai jam 23:59).
                         </p>
                     </div>
 
-                    <div class="pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <label for="jam_cek_belum_hadir" class="block text-[11px] font-black uppercase tracking-widest font-jakarta text-slate-400 dark:text-slate-500">Jam Cek Belum Hadir (opsional)</label>
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-lexend font-bold text-[10px] uppercase tracking-widest shadow-sm
-                                         {{ $pengaturan->cekBelumHadirAktif() ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400' }}">
-                                <x-icon :name="$pengaturan->cekBelumHadirAktif() ? 'check' : 'x-circle'" class="w-3 h-3 stroke-[2.5]" />
-                                {{ $pengaturan->cekBelumHadirAktif() ? 'Aktif' : 'Nonaktif' }}
-                            </span>
-                        </div>
-                        <input id="jam_cek_belum_hadir" name="jam_cek_belum_hadir" type="time"
-                               class="block w-full sm:w-1/3 rounded-xl border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 font-lexend font-bold text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500/30 backdrop-blur-sm px-4 py-2.5"
-                               value="{{ old('jam_cek_belum_hadir', $pengaturan->jam_cek_belum_hadir ? \Illuminate\Support\Str::of($pengaturan->jam_cek_belum_hadir)->substr(0,5) : '') }}" />
-                        <p class="text-xs text-slate-500 dark:text-slate-400 font-jakarta mt-2 leading-relaxed">
-                            Kalau diisi, orang tua siswa yang belum absen sampai jam ini dapat peringatan dini lewat email &amp; WhatsApp. Kosongkan untuk menonaktifkan.
-                        </p>
-                    </div>
+
 
                     <div class="flex justify-end pt-2">
                         <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-black font-lexend text-xs uppercase tracking-wider shadow-lg shadow-indigo-500/20 transition-all duration-300 transform active:scale-95">
@@ -240,8 +244,9 @@
             </div>
         </div>
 
-        {{-- Bento Card: IP Jaringan Sekolah --}}
-        <div class="bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        {{-- Bento Card: IP Jaringan Sekolah -- disembunyikan (tidak dibutuhkan sekolah).
+             Untuk mengaktifkan kembali, hapus class `hidden` di div di bawah ini. --}}
+        <div class="hidden bento-card rounded-[2.5rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
             <div class="absolute -right-6 -bottom-6 text-[100px] font-black text-slate-900/[0.02] dark:text-white/[0.015] font-lexend pointer-events-none tracking-tighter leading-none select-none">WIFI</div>
 
             <div class="relative z-10">

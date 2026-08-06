@@ -252,28 +252,30 @@ erDiagram
 3. **Pendaftaran/Manajemen Wajah Siswa** — admin dapat merekam maupun menghapus sampel wajah siswa.
 4. **Rekap Absensi Harian** — filter tanggal & kelas, input manual (hadir/izin/sakit/alpha) untuk kondisi offline, hapus data absensi (dengan konfirmasi & tercatat di audit log).
 5. **Pengajuan Izin/Sakit** — daftar pengajuan dari siswa lengkap dengan bukti (foto/dokumen), tombol **approve/reject** dengan catatan.
-6. **Laporan Periode** — filter rentang tanggal & kelas, **ekspor Excel (.xlsx)** dan **PDF**.
-7. **Pengaturan Sekolah** _(khusus admin)_ — nama sekolah, jam masuk, batas terlambat, mulai jam pulang, simulasi waktu (untuk testing), lokasi & radius GPS sekolah.
-8. **Hari Libur** _(khusus admin)_ — tanggal libur manual (rentang), serta **libur mingguan otomatis** (misal Sabtu & Minggu dicentang sekali, berlaku terus tanpa perlu ditambah manual tiap minggu).
-9. **Audit Log Absensi** _(khusus admin)_ — riwayat lengkap data absensi yang pernah dihapus: siapa menghapus, kapan, dan data apa.
-10. **Log Notifikasi Orang Tua** _(khusus admin)_ — riwayat pengiriman notifikasi alpha ke orang tua (terkirim/gagal/tidak ada kontak).
-11. **Manajemen Akun Staf** _(khusus admin)_ — kelola akun admin/wali kelas lain.
-12. **Dashboard Ringkasan** — total siswa, kelas, siswa yang sudah daftar wajah, jumlah hadir/terlambat/izin-sakit hari ini, daftar absen terbaru, serta **grafik tren kehadiran 7 hari terakhir**. Wali kelas melihat roster lengkap kelas binaannya beserta status absen hari ini.
+6. **Pengajuan Koreksi Absensi** — siswa dapat mengajukan koreksi atas data absensi yang dirasa keliru; wali kelas/admin dapat menyetujui atau menolak dengan catatan.
+7. **Laporan Periode** — filter rentang tanggal & kelas, **ekspor Excel (.xlsx)** dan **PDF**.
+8. **Pengaturan Sekolah** _(khusus admin)_ — nama sekolah, jam masuk, batas terlambat, mulai jam pulang, **batas akhir absen pulang** (dapat dikonfigurasi), simulasi waktu (untuk testing), lokasi & radius GPS sekolah.
+9. **Hari Libur** _(khusus admin)_ — tanggal libur manual (rentang), serta **libur mingguan otomatis** (misal Sabtu & Minggu dicentang sekali, berlaku terus tanpa perlu ditambah manual tiap minggu).
+10. **Audit Log Absensi** _(khusus admin)_ — riwayat lengkap data absensi yang pernah dihapus: siapa menghapus, kapan, dan data apa.
+11. **Log Notifikasi Orang Tua** _(khusus admin)_ — riwayat pengiriman notifikasi ke orang tua (terkirim/gagal/tidak ada kontak).
+12. **Manajemen Akun Staf** _(khusus admin)_ — kelola akun admin/wali kelas lain.
+13. **Dashboard Ringkasan** — total siswa, kelas, siswa yang sudah daftar wajah, jumlah hadir/terlambat/izin-sakit hari ini, daftar absen terbaru, serta **grafik tren kehadiran 7 hari terakhir**. Wali kelas melihat roster lengkap kelas binaannya beserta status absen hari ini.
 
 ### 4.2 Modul Portal Siswa Mandiri (`/portal`)
 
 1. **Registrasi Mandiri** — siswa mengklaim NIS yang telah didaftarkan admin, lalu membuat username & password sendiri.
 2. **Pendaftaran Wajah** — siswa merekam beberapa sampel wajah sendiri lewat webcam/kamera HP.
 3. **Absen Mandiri** — siswa menghadap kamera dari perangkat masing-masing; sistem otomatis mendeteksi & mencocokkan wajah, mencatat **jam masuk** (status hadir/terlambat) dan **jam pulang** secara otomatis. Sistem mensyaratkan siswa **berkedip** di depan kamera sebelum absen tercatat (liveness check), agar foto statis di layar HP tidak bisa mengelabui sistem.
-4. **Verifikasi Lokasi GPS (opsional)** — bila diaktifkan admin, browser akan meminta izin lokasi dan menolak absen jika siswa berada di luar radius sekolah yang dikonfigurasi. Admin menentukan titik & radius sekolah lewat **peta interaktif** (klik peta / seret pin / tombol "gunakan lokasi saat ini"), bukan input koordinat manual.
+4. **Verifikasi Lokasi GPS** — browser meminta izin lokasi dan menolak absen jika siswa berada di luar radius sekolah yang dikonfigurasi. Admin menentukan titik & radius sekolah lewat **peta interaktif** (klik peta / seret pin / tombol "gunakan lokasi saat ini"), bukan input koordinat manual.
 5. **Ajukan Izin/Sakit** — siswa mengunggah bukti (misalnya surat/foto) beserta keterangan, menunggu approval wali kelas/admin.
-6. **Riwayat Kehadiran** — siswa dapat melihat rekap kehadiran & hari libur bulanan miliknya sendiri.
-7. **Manajemen Profil/Password** — siswa dapat mengubah password akun portalnya.
+6. **Ajukan Koreksi Absensi** — siswa dapat mengajukan permintaan koreksi data absensinya jika terdapat kekeliruan, disertai keterangan alasan.
+7. **Riwayat Kehadiran** — siswa dapat melihat rekap kehadiran & hari libur bulanan miliknya sendiri.
+8. **Manajemen Profil/Password** — siswa dapat mengubah password akun portalnya.
 
 ### 4.3 Fitur Otomatis (Background/Terjadwal)
 
 1. **Penandaan Alpha Otomatis** — siswa yang belum absen sampai akhir hari (dan bukan hari libur) otomatis ditandai _alpha_.
-2. **Notifikasi Email ke Orang Tua** — terkirim otomatis di dua momen: (a) **konfirmasi kehadiran**, setiap kali siswa absen masuk (agar orang tua tahu anaknya sudah tiba), dan (b) **peringatan alpha**, saat siswa tidak absen sama sekali sampai akhir hari — keduanya hanya terkirim jika email orang tua sudah didaftarkan, dan tercatat di log notifikasi.
+2. **Notifikasi WhatsApp & Email ke Orang Tua** — terkirim otomatis di tiga momen: (a) **konfirmasi hadir**, setiap kali siswa berhasil absen masuk; (b) **konfirmasi pulang**, setiap kali siswa berhasil absen pulang; dan (c) **peringatan alpha**, saat siswa ditandai alpha di akhir hari. WhatsApp menjadi kanal utama, email sebagai jalur cadangan. Seluruh pengiriman tercatat di log notifikasi, dan notifikasi yang gagal dikirim ulang secara otomatis.
 3. **Notifikasi Email ke Wali Kelas** — terkirim otomatis setiap kali siswa di kelas binaannya mengajukan izin/sakit baru, agar wali kelas cepat tahu tanpa harus mengecek halaman pengajuan izin secara manual.
 4. **Backup Database Otomatis** — dump database + foto siswa terjadwal setiap hari (`spatie/laravel-backup`).
 
@@ -284,8 +286,8 @@ erDiagram
 ### 5.1 Alur Admin/Wali Kelas (Setup Awal)
 
 1. **Kelas** → tambah kelas/rombel.
-2. **Siswa** → tambah siswa satu-satu atau impor Excel (NIS, nama, kelas, opsional kontak orang tua).
-3. **Pengaturan** → atur jam masuk, batas terlambat, mulai pulang, opsional lokasi GPS sekolah.
+2. **Siswa** → tambah siswa satu-satu atau impor Excel (NIS, nama, kelas, opsional kontak orang tua & nomor WhatsApp).
+3. **Pengaturan** → atur jam masuk, batas terlambat, mulai pulang, batas akhir absen pulang, dan lokasi GPS sekolah.
 4. **Hari Libur** → tambah tanggal libur manual dan/atau centang hari libur mingguan.
 5. **Rekap/Laporan** → pantau kehadiran, input manual bila perlu, ekspor laporan.
 
@@ -293,40 +295,44 @@ erDiagram
 
 1. **Registrasi** (sekali saja) → klaim NIS, buat username & password.
 2. **Daftar Wajah** (sekali saja) → rekam beberapa sampel wajah.
-3. **Absen** (setiap hari) → buka halaman absen, hadapkan wajah ke kamera → kehadiran tercatat otomatis (masuk & pulang).
-4. **Riwayat** → cek rekap kehadiran & hari libur bulanan.
-5. Jika berhalangan hadir → **ajukan izin/sakit** dengan bukti, tunggu approval wali kelas.
+3. **Absen Masuk** (pagi) → buka halaman absen, hadapkan wajah ke kamera → status hadir/terlambat tercatat otomatis → orang tua menerima notifikasi WhatsApp konfirmasi kehadiran.
+4. **Absen Pulang** (siang/sore) → buka halaman absen kembali, hadapkan wajah ke kamera → jam pulang tercatat otomatis → orang tua menerima notifikasi WhatsApp konfirmasi pulang.
+5. **Riwayat** → cek rekap kehadiran & hari libur bulanan.
+6. Jika berhalangan hadir → **ajukan izin/sakit** dengan bukti, tunggu approval wali kelas.
+7. Jika ada kekeliruan data → **ajukan koreksi absensi** dengan keterangan alasan.
 
 ### 5.3 Alur Otomatis Akhir Hari
 
-Sistem memeriksa siswa yang belum absen pada hari sekolah (bukan hari libur) → ditandai **alpha** → jika email orang tua terdaftar, notifikasi otomatis dikirim.
+Siswa yang tidak absen hingga akhir hari sekolah (bukan hari libur) secara otomatis ditandai **alpha** → notifikasi alpha langsung dikirim ke orang tua via WhatsApp (& email sebagai cadangan).
 
 ---
 
 ## BAB VI. KEAMANAN, PRIVASI & KETERBATASAN
 
-| Aspek                 | Keterangan                                                                                                                                                                                                                                                                                                    |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Data biometrik**    | Yang disimpan adalah _descriptor_ (vektor angka), bukan foto wajah utuh — namun tetap tergolong data pribadi sensitif dan perlu perlakuan sesuai kaidah pelindungan data pribadi.                                                                                                                             |
-| **Anti-spoofing**     | Sudah ada verifikasi **liveness berbasis kedipan mata** (Eye Aspect Ratio) — siswa wajib berkedip di depan kamera sebelum absen tercatat, sehingga foto statis di layar HP tidak lolos. Belum ada deteksi gerakan kepala/kedalaman wajah (3D), sehingga video rekaman canggih secara teori masih berisiko — cukup memadai untuk lingkungan sekolah yang terawasi, belum untuk kebutuhan keamanan tingkat tinggi. |
-| **Kebutuhan HTTPS**   | Kamera browser (`getUserMedia`) hanya aktif di `localhost` atau melalui koneksi HTTPS — kebijakan standar browser modern, bukan keterbatasan aplikasi.                                                                                                                                                        |
-| **Duplikasi absensi** | Dicegah berlapis: constraint unik di basis data (`siswa_id` + `tanggal`) dan validasi logika di server.                                                                                                                                                                                                       |
-| **Audit trail**       | Setiap absensi yang dihapus tetap tercatat siapa & kapan menghapusnya, meski baris aslinya sudah hilang dari rekap.                                                                                                                                                                                           |
-| **Pemisahan akses**   | Login staf dan login siswa memakai sistem autentikasi yang benar-benar terpisah (guard berbeda), sehingga siswa tidak bisa mengakses area admin/wali kelas.                                                                                                                                                   |
+| Aspek                    | Keterangan                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Data biometrik**       | Yang disimpan adalah _descriptor_ (vektor angka hasil pengenalan wajah), bukan foto wajah utuh — namun tetap tergolong data pribadi sensitif dan perlu perlakuan sesuai kaidah pelindungan data pribadi.                                                                                                                                             |
+| **Anti-spoofing**        | Verifikasi **liveness berbasis kedipan mata** (Eye Aspect Ratio) — siswa wajib berkedip di depan kamera sebelum absen tercatat, sehingga foto statis di layar HP tidak lolos. Belum ada deteksi gerakan kepala/kedalaman wajah (3D), sehingga video rekaman yang canggih secara teori masih berisiko; memadai untuk lingkungan sekolah yang terawasi. |
+| **Verifikasi lokasi GPS**| Siswa harus berada dalam radius yang dikonfigurasi dari titik sekolah. Karena aplikasi berjalan di browser, sistem belum dapat mendeteksi penggunaan aplikasi _fake/mock location_ — koordinat palsu dengan akurasi meyakinkan dapat lolos dari pengecekan radius. Verifikasi wajah & liveness menjadi lini pertahanan utama.                         |
+| **Kebutuhan HTTPS**      | Kamera browser (`getUserMedia`) hanya aktif di `localhost` atau melalui koneksi HTTPS — kebijakan standar browser modern.                                                                                                                                                                                                                            |
+| **Duplikasi absensi**    | Dicegah berlapis: constraint unik di basis data (`siswa_id` + `tanggal`) dan validasi logika di server.                                                                                                                                                                                                                                              |
+| **Audit trail**          | Setiap absensi yang dihapus tetap tercatat siapa & kapan menghapusnya, meski baris aslinya sudah hilang dari rekap.                                                                                                                                                                                                                                  |
+| **Pemisahan akses**      | Login staf dan login siswa memakai sistem autentikasi yang benar-benar terpisah (guard berbeda), sehingga siswa tidak bisa mengakses area admin/wali kelas.                                                                                                                                                                                          |
+| **Rate limiting**        | Pembatasan percobaan pada endpoint pendaftaran akun dan lupa kata sandi untuk mencegah penyalahgunaan.                                                                                                                                                                                                                                               |
 
 ---
 
 ## BAB VII. RENCANA PENGEMBANGAN LANJUTAN
 
-1. **Notifikasi via WhatsApp** sebagai kanal tambahan/pengganti email ke orang tua (kolom nomor WA sudah tersedia di basis data, menunggu pemilihan penyedia API).
-2. **Liveness detection yang lebih kuat** — deteksi kedipan mata (Eye Aspect Ratio) sudah berjalan; pengembangan lanjutan dapat menambah deteksi gerakan kepala atau pola tantangan acak (challenge-response) untuk menutup celah video/deepfake yang lebih canggih.
-3. **Dashboard statistik lanjutan** — tren 7 hari & ringkasan harian sudah tersedia; dapat dikembangkan menjadi perbandingan antar kelas, rentang periode custom, dan grafik yang bisa diekspor untuk laporan evaluasi sekolah.
+1. **Liveness detection yang lebih kuat** — deteksi kedipan mata (Eye Aspect Ratio) sudah berjalan; pengembangan lanjutan dapat menambah deteksi gerakan kepala atau pola tantangan acak (challenge-response) untuk menutup celah video/deepfake yang lebih canggih.
+2. **Dashboard statistik lanjutan** — tren 7 hari & ringkasan harian sudah tersedia; dapat dikembangkan menjadi perbandingan antar kelas, rentang periode custom, dan grafik yang bisa diekspor untuk laporan evaluasi sekolah.
+3. **Deteksi mock location** — integrasi dengan mekanisme di luar browser (misalnya aplikasi companion native) agar sistem dapat mendeteksi koordinat GPS palsu dari aplikasi _mock location_.
 
 ---
 
 ## BAB VIII. PENUTUP
 
-Aplikasi Absensi Wajah ini berhasil mengotomatisasi proses pencatatan kehadiran siswa melalui teknologi pengenalan wajah yang berjalan di sisi klien, sehingga server tetap ringan namun data kehadiran tetap tervalidasi secara ketat di sisi backend (anti-duplikasi, validasi jam, opsi validasi lokasi & liveness). Dengan tambahan fitur portal mandiri siswa, verifikasi lokasi GPS lewat peta interaktif, deteksi kedipan mata anti-foto, pengelolaan hari libur otomatis, notifikasi orang tua, dashboard statistik, serta audit trail, aplikasi ini diharapkan dapat menjadi solusi absensi sekolah yang **akurat, efisien, dan akuntabel**, sekaligus membuka ruang pengembangan lanjutan seperti integrasi WhatsApp dan penguatan liveness detection di masa depan.
+Aplikasi Absensi Wajah ini berhasil mengotomatisasi proses pencatatan kehadiran siswa melalui teknologi pengenalan wajah yang berjalan di sisi klien, sehingga server tetap ringan namun data kehadiran tetap tervalidasi secara ketat di sisi backend (anti-duplikasi, validasi jam, validasi lokasi GPS, serta liveness detection). Dengan fitur portal mandiri siswa, verifikasi lokasi GPS lewat peta interaktif, deteksi kedipan mata anti-foto, pengelolaan hari libur otomatis, notifikasi WhatsApp & email ke orang tua (hadir, pulang, dan peringatan alpha), pengajuan koreksi absensi, dashboard statistik, serta audit trail, aplikasi ini diharapkan dapat menjadi solusi absensi sekolah yang **akurat, efisien, dan akuntabel** bagi SMKN 1 Sindang.
 
 ---
 

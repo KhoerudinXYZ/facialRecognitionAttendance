@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\SiswaHadirMail;
+use App\Mail\SiswaPulangMail;
 use App\Models\Absensi;
 use App\Models\AbsensiKecepatanAnomaliLog;
 use App\Models\AbsensiLokasiGagalLog;
@@ -189,6 +190,17 @@ class AbsensiRecorder
                 // Izin disetujui — lanjutkan ke pencatatan jam_pulang
             }
 
+            if ($pengaturan->batas_pulang) {
+                $batasPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->batas_pulang);
+                if ($now->greaterThan($batasPulang)) {
+                    return [
+                        'status'  => 'tutup',
+                        'message' => "Jam absen pulang sudah ditutup untuk hari ini (batas {$pengaturan->batas_pulang}).",
+                        'nama'    => $siswa->nama,
+                    ];
+                }
+            }
+
             if ($tolakLokasi = $this->cekLokasi($pengaturan, $siswa, $lat, $lng, $accuracy, $ip, $now)) {
                 return $tolakLokasi;
             }
@@ -201,6 +213,8 @@ class AbsensiRecorder
                 'lat' => $lat,
                 'lng' => $lng,
             ]);
+
+            $this->notifikasiPulang($siswa, $now);
 
             return [
                 'status' => 'success',
@@ -282,6 +296,56 @@ class AbsensiRecorder
             'siswa_nama' => $siswa->nama,
             'tanggal' => $tanggal,
             'jenis' => 'kehadiran',
+            'kanal' => 'email',
+            'kontak' => $siswa->email_orang_tua,
+            'pesan' => $pesan,
+            'status' => $hasil,
+        ]);
+    }
+
+    /**
+     * Konfirmasi ke orang tua bahwa anaknya telah absen pulang.
+     */
+    private function notifikasiPulang(Siswa $siswa, Carbon $waktu): void
+    {
+        $tanggal = $waktu->copy()->startOfDay();
+        $pesan = "Yth. Orang Tua/Wali dari {$siswa->nama}, kami informasikan ananda telah melakukan absen pulang pada "
+            . "{$waktu->format('d/m/Y H:i')}.";
+
+        $waTerkirim = config('services.fonnte.kehadiran_aktif')
+            && app(WhatsAppNotifier::class)->kirimDanCatat($siswa, $tanggal, 'pulang', $pesan);
+
+        if ($waTerkirim) {
+            return;
+        }
+
+        if (! $siswa->email_orang_tua) {
+            NotifikasiAbsensiLog::create([
+                'siswa_id' => $siswa->id,
+                'siswa_nama' => $siswa->nama,
+                'tanggal' => $tanggal,
+                'jenis' => 'pulang',
+                'kanal' => 'email',
+                'kontak' => null,
+                'pesan' => $pesan,
+                'status' => 'tidak_ada_kontak',
+            ]);
+
+            return;
+        }
+
+        try {
+            Mail::to($siswa->email_orang_tua)->queue(new SiswaPulangMail($siswa->nama, $waktu));
+            $hasil = 'terkirim';
+        } catch (Throwable) {
+            $hasil = 'gagal';
+        }
+
+        NotifikasiAbsensiLog::create([
+            'siswa_id' => $siswa->id,
+            'siswa_nama' => $siswa->nama,
+            'tanggal' => $tanggal,
+            'jenis' => 'pulang',
             'kanal' => 'email',
             'kontak' => $siswa->email_orang_tua,
             'pesan' => $pesan,
