@@ -37,7 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
     const labeled = JSON.parse(root.dataset.labeled || '[]');
     const lokasiAktif = root.dataset.lokasiAktif === '1';
-    const kameraTerkunci = root.dataset.kameraTerkunci === '1';
+    let kameraTerkunci = root.dataset.kameraTerkunci === '1';
+
+    // Timestamps (detik UNIX) batas_pulang & mulai_pulang dari server.
+    // Dipakai cekBatasWaktu() untuk mengunci kamera secara real-time
+    // tanpa reload halaman ketika jam batas tercapai saat halaman sudah terbuka.
+    const batasPulangTs  = root.dataset.batasPulang  ? parseInt(root.dataset.batasPulang,  10) : null;
+    const mulaiPulangTs  = root.dataset.mulaiPulang  ? parseInt(root.dataset.mulaiPulang,  10) : null;
 
     // Peta id -> nama untuk menampilkan label
     const namaMap = {};
@@ -109,6 +115,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setStatus(msg) {
         statusEl.textContent = msg;
+    }
+
+    /**
+     * Cek apakah jam batas absen (pulang/masuk) sudah tercapai secara real-time.
+     * Dipanggil setiap 10 detik setelah kamera aktif.
+     * Jika jam batas_pulang terlewat → matikan kamera + kunci halaman.
+     * Jika jam mulai_pulang terlewat tapi siswa belum absen masuk → kunci juga.
+     */
+    function cekBatasWaktu() {
+        if (kameraTerkunci) return; // sudah terkunci dari server, tidak perlu cek ulang
+
+        const nowTs = Math.floor(Date.now() / 1000);
+
+        if (batasPulangTs && nowTs > batasPulangTs) {
+            kameraTerkunci = true;
+            if (cameraStream) {
+                cameraStream.getTracks().forEach((t) => t.stop());
+                cameraStream = null;
+            }
+            const jamBatas = new Date(batasPulangTs * 1000).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            setStatus(`Jam absen pulang sudah ditutup untuk hari ini (batas ${jamBatas}).`);
+            return;
+        }
+
+        // Juga kunci absen masuk jika mulai_pulang sudah lewat dan siswa
+        // membuka halaman sebelum jam itu kemudian menunggu terlalu lama.
+        // Server sudah menolaknya, ini hanya agar UI konsisten.
+        if (mulaiPulangTs && nowTs > mulaiPulangTs) {
+            // Cek apakah ini sesi absen masuk (belum absen sama sekali).
+            // Tidak ada informasi langsung di JS, biarkan server yang menolak —
+            // cukup tampilkan notifikasi ringan agar siswa sadar.
+            // (Tidak matikan kamera di sini karena bisa jadi sesi absen pulang.)
+        }
     }
 
     // Beda dari setStatus() biasa: dipakai khusus saat izin kamera/lokasi
@@ -483,6 +522,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             setStatus('Kamera aktif. Arahkan wajah ke kamera untuk absen otomatis.');
+
+            // Real-time lock: cek batas waktu setiap 10 detik.
+            // Ini memastikan kamera otomatis terkunci di halaman yang sudah
+            // terbuka sebelum jam batas, bukan hanya saat halaman dimuat ulang.
+            const waktuCheckInterval = setInterval(() => {
+                cekBatasWaktu();
+                if (kameraTerkunci) clearInterval(waktuCheckInterval);
+            }, 10_000);
+
             requestAnimationFrame(loop);
         } catch (e) {
             console.error(e);

@@ -5,7 +5,9 @@
          data-dashboard-url="{{ route('siswa.dashboard') }}"
          data-labeled='@json($labeledDescriptors)'
          data-lokasi-aktif="{{ $pengaturan->lokasiAktif() ? '1' : '0' }}"
-         data-kamera-terkunci="{{ $kameraTerkunci ? '1' : '0' }}">
+         data-kamera-terkunci="{{ $kameraTerkunci ? '1' : '0' }}"
+         data-batas-pulang="{{ $pengaturan->batas_pulang ? \Carbon\Carbon::parse(now()->toDateString() . ' ' . $pengaturan->batas_pulang)->timestamp : '' }}"
+         data-mulai-pulang="{{ \Carbon\Carbon::parse(now()->toDateString() . ' ' . $pengaturan->mulai_pulang)->timestamp }}">
          
         <!-- Massive Watermark Text Background -->
         <div class="absolute -left-4 top-10 text-[140px] font-black text-indigo-900/[0.03] dark:text-indigo-100/[0.02] font-lexend pointer-events-none tracking-tighter leading-none select-none transition-transform duration-700 group-hover:scale-105">
