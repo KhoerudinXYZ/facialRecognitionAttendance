@@ -65,6 +65,12 @@ class SiswaDashboardController extends Controller
         $jamMasukMulai = Carbon::parse($today->toDateString() . ' ' . $pengaturan->jam_masuk);
         $sebelumJamMasuk = $now->lessThan($jamMasukMulai);
 
-        return view('siswa-auth.dashboard', compact('siswa', 'absenHariIni', 'statistikBulanIni', 'mingguIni', 'isLibur', 'pengaturan', 'bisaAbsenPulang', 'sebelumJamMasuk'));
+        $lewatBatasPulang = false;
+        if ($pengaturan->batas_pulang) {
+            $batasPulang = Carbon::parse($today->toDateString() . ' ' . $pengaturan->batas_pulang);
+            $lewatBatasPulang = $now->greaterThan($batasPulang);
+        }
+
+        return view('siswa-auth.dashboard', compact('siswa', 'absenHariIni', 'statistikBulanIni', 'mingguIni', 'isLibur', 'pengaturan', 'bisaAbsenPulang', 'sebelumJamMasuk', 'lewatBatasPulang'));
     }
 }

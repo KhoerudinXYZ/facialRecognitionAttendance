@@ -125,9 +125,10 @@
                 $sudahPulang = (bool) ($absenHariIni->jam_pulang ?? null);
                 $absenSelesai = ($sudahMasuk && $sudahPulang) || $izinSakit;
                 $menungguJamPulang = $sudahMasuk && ! $sudahPulang && ! ($bisaAbsenPulang ?? false);
+                $batasPulangTutup = $sudahMasuk && ! $sudahPulang && ($lewatBatasPulang ?? false);
                 $absenMasukTutup = ! $sudahMasuk && ($bisaAbsenPulang ?? false);
                 $absenBelumBuka = ! $sudahMasuk && ($sebelumJamMasuk ?? false);
-                $absenNonaktif = $isLibur || $absenSelesai || $menungguJamPulang || $absenMasukTutup || $absenBelumBuka;
+                $absenNonaktif = $isLibur || $absenSelesai || $menungguJamPulang || $batasPulangTutup || $absenMasukTutup || $absenBelumBuka;
             @endphp
             <div class="flex items-center justify-between relative z-10 px-2 sm:px-4">
                 <!-- Step 1: Masuk -->
@@ -179,6 +180,10 @@
                             $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5);
                             $tooltipText = "Sudah absen masuk. Kamera absen pulang terbuka pukul {$jamPulang}";
                             $iconName = 'lock';
+                        } elseif ($batasPulangTutup) {
+                            $jamBatasPulang = \Illuminate\Support\Str::of($pengaturan->batas_pulang)->substr(0,5);
+                            $tooltipText = "Jam absen pulang telah ditutup (batas {$jamBatasPulang})";
+                            $iconName = 'lock';
                         } elseif ($absenMasukTutup) {
                             $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5);
                             $tooltipText = "Jam absen masuk telah ditutup (mulai {$jamPulang})";
@@ -194,6 +199,7 @@
                                 'w-20 h-20 sm:w-24 sm:h-24 rounded-[2rem] flex flex-col items-center justify-center shadow-xl border-2 backdrop-blur-md transition-all duration-300',
                                 'bg-white/50 text-slate-400 border-white/60 dark:bg-slate-800/50 dark:text-slate-500 dark:border-slate-700/50' => $isLibur || $izinSakit || $absenMasukTutup || $absenBelumBuka,
                                 'bg-amber-500/10 text-amber-600 border-amber-300/50 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30' => $menungguJamPulang,
+                                'bg-rose-500/10 text-rose-600 border-rose-300/50 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30' => $batasPulangTutup,
                                 'bg-emerald-50/80 text-emerald-500 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50' => $absenSelesai && !$isLibur && !$izinSakit,
                             ])>
                             <x-icon :name="$iconName" class="w-8 h-8 sm:w-10 sm:h-10 stroke-[2.5]" />
@@ -202,11 +208,14 @@
                             <span @class([
                                     'text-[10px] sm:text-xs font-black uppercase tracking-widest font-lexend',
                                     'text-amber-600 dark:text-amber-400' => $menungguJamPulang,
+                                    'text-rose-600 dark:text-rose-400' => $batasPulangTutup,
                                     'text-slate-400 dark:text-slate-500' => $isLibur || $izinSakit || $absenMasukTutup || $absenBelumBuka,
                                     'text-emerald-600 dark:text-emerald-400' => $absenSelesai && !$isLibur && !$izinSakit,
                                 ])>
                                 @if($menungguJamPulang)
-                                    Terkunci (Jam {{ \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5) }})
+                                    Buka {{ \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5) }}
+                                @elseif($batasPulangTutup)
+                                    Pulang Ditutup
                                 @elseif($absenMasukTutup)
                                     Masuk Ditutup
                                 @elseif($absenBelumBuka)

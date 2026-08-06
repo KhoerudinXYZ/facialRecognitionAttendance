@@ -21,6 +21,9 @@
                 <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Masuk: <strong class="text-slate-800 dark:text-slate-200 font-lexend">{{ \Illuminate\Support\Str::of($pengaturan->jam_masuk)->substr(0,5) }}</strong></span>
                 <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Telat: <strong class="text-slate-800 dark:text-slate-200 font-lexend">{{ \Illuminate\Support\Str::of($pengaturan->batas_terlambat)->substr(0,5) }}</strong></span>
                 <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-500"></span>Pulang: <strong class="text-slate-800 dark:text-slate-200 font-lexend">{{ \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0,5) }}</strong></span>
+                @if($pengaturan->batas_pulang)
+                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Batas Pulang: <strong class="text-slate-800 dark:text-slate-200 font-lexend">{{ \Illuminate\Support\Str::of($pengaturan->batas_pulang)->substr(0,5) }}</strong></span>
+                @endif
             </div>
         </div>
 
@@ -74,9 +77,11 @@
         <!-- Status Message -->
         <div class="space-y-2 relative z-10 px-4">
             @if($kameraTerkunci)
-                <p class="text-sm font-black font-lexend text-slate-700 dark:text-slate-300 text-center min-h-[3rem] bg-slate-100/80 dark:bg-slate-800/40 py-3 px-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-inner backdrop-blur-sm transition-all duration-300">
-                    Akses Kamera Dinonaktifkan
-                </p>
+                <div class="bg-amber-50/90 dark:bg-amber-950/40 py-3.5 px-4 rounded-2xl border border-amber-200/60 dark:border-amber-800/50 shadow-inner backdrop-blur-sm transition-all duration-300 text-center">
+                    <p class="text-sm font-black font-lexend text-amber-800 dark:text-amber-200 whitespace-pre-line">
+                        {{ $pesanTerkunci ?: 'Akses Kamera Dinonaktifkan' }}
+                    </p>
+                </div>
             @else
                 <p id="kiosk-status" class="text-sm font-black font-lexend text-indigo-700 dark:text-indigo-300 text-center min-h-[3rem] bg-indigo-50/80 dark:bg-indigo-900/40 py-3 px-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/50 shadow-inner backdrop-blur-sm transition-all duration-300 whitespace-pre-line">
                     Menyiapkan kamera pemindai…

@@ -70,9 +70,9 @@ class SiswaAbsensiController extends Controller
                 $jamPulang = \Illuminate\Support\Str::of($pengaturan->mulai_pulang)->substr(0, 5);
                 $kameraTerkunci = true;
                 if ($izinPulangCepat && $izinPulangCepat->status === 'menunggu') {
-                    $pesanTerkunci = "Pengajuan izin pulang cepat kamu sedang menunggu persetujuan wali kelas.";
+                    $pesanTerkunci = "Izin pulang cepat sedang menunggu persetujuan.";
                 } else {
-                    $pesanTerkunci = "Sudah absen masuk. Kamera untuk absen pulang baru terbuka pukul {$jamPulang}.";
+                    $pesanTerkunci = "Absen pulang dibuka pukul {$jamPulang}.";
                 }
             }
         }
@@ -83,7 +83,7 @@ class SiswaAbsensiController extends Controller
             if ($now->greaterThan($batasPulang)) {
                 $jamBatasPulang = \Illuminate\Support\Str::of($pengaturan->batas_pulang)->substr(0, 5);
                 $kameraTerkunci = true;
-                $pesanTerkunci = "Jam absen pulang sudah ditutup untuk hari ini (batas {$jamBatasPulang}).";
+                $pesanTerkunci = "Absen pulang sudah ditutup (batas {$jamBatasPulang}).";
             }
         }
 
@@ -92,7 +92,7 @@ class SiswaAbsensiController extends Controller
         // jam absen masuk sudah ditutup — tidak ada yang bisa dicatat.
         if ((! $absenHariIni || $absenHariIni->status === 'alpha') && $now->greaterThanOrEqualTo($mulaiPulang)) {
             $kameraTerkunci = true;
-            $pesanTerkunci = "Jam absen masuk sudah ditutup untuk hari ini (mulai {$pengaturan->mulai_pulang}).";
+            $pesanTerkunci = "Absen masuk sudah ditutup.";
         }
 
         // Batas bawah: sebelum ini, AbsensiRecorder cuma menolak SETELAH
@@ -102,7 +102,7 @@ class SiswaAbsensiController extends Controller
         $jamMasukMulai = Carbon::parse($today->toDateString() . ' ' . $pengaturan->jam_masuk);
         if ((! $absenHariIni || $absenHariIni->status === 'alpha') && $now->lessThan($jamMasukMulai)) {
             $kameraTerkunci = true;
-            $pesanTerkunci = 'Absen masuk belum dibuka. Kamera baru aktif mulai pukul '
+            $pesanTerkunci = 'Absen masuk dibuka pukul '
                 . \Illuminate\Support\Str::of($pengaturan->jam_masuk)->substr(0, 5) . '.';
         }
 
