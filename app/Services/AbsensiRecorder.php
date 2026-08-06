@@ -196,7 +196,7 @@ class AbsensiRecorder
                     $jamBatas = \Illuminate\Support\Str::of($pengaturan->batas_pulang)->substr(0, 5);
                     return [
                         'status'  => 'tutup',
-                        'message' => "Absen pulang sudah ditutup (batas {$jamBatas}).",
+                        'message' => "Jam absen pulang sudah ditutup (batas {$jamBatas}).",
                         'nama'    => $siswa->nama,
                     ];
                 }
